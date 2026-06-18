@@ -1,0 +1,139 @@
+{
+  "events": [
+    {
+      "id": "love_late_night_call",
+      "title": { "en": "The Right Call at the Wrong Hour", "zh": "深夜里刚好接到的电话" },
+      "stage": ["any"],
+      "tags": ["support", "stress"],
+      "weight": 11,
+      "condition": { "maxStats": { "mood": 60 } },
+      "text": { "en": "It is way too late, your brain has 80 tabs open, and your phone lights up: {partner} calling, just to hear how you're holding up.", "zh": "夜已经太深，脑子里开着 80 个 tab，手机突然亮了——是 {partner}，就想听听你还撑不撑得住。" },
+      "choices": [
+        { "id": "pick_up", "text": { "en": "Pick up and actually talk", "zh": "接起来，好好聊聊" }, "resultText": { "en": "Twenty minutes of {partner}'s nonsense and your shoulders finally drop. The notes will survive without you.", "zh": "{partner} 胡说八道二十分钟，你的肩膀终于塌了下来。笔记没你也不会跑。" }, "effects": { "love": 8, "mood": 7, "stress": -9, "knowledge": -2 } },
+        { "id": "quick_goodnight", "text": { "en": "Quick goodnight, back to studying", "zh": "道个晚安，继续复习" }, "resultText": { "en": "You keep it short and get a bit more done, but you can hear {partner} miss you through the phone.", "zh": "你长话短说多看了一点，可电话那头 {partner} 的想念你也听得出来。" }, "effects": { "knowledge": 4, "love": 2, "mood": -1, "stress": 2 } },
+        { "id": "silent", "text": { "en": "Let it ring, you're in the zone", "zh": "让它响，你正在状态里" }, "resultText": { "en": "You finish the section, then feel a small guilty pang at the missed-call notification glowing back at you.", "zh": "你啃完这一节，再看到那条未接来电的提示，心里轻轻咯噔了一下。" }, "effects": { "knowledge": 6, "love": -3, "mood": -3, "stress": 1 } }
+      ]
+    },
+    {
+      "id": "love_snack_delivery",
+      "title": { "en": "Emergency Snack Drop", "zh": "紧急投喂零食" },
+      "stage": ["any"],
+      "tags": ["support", "rest"],
+      "weight": 10,
+      "text": { "en": "{partner} has ambushed your study spot with a suspicious paper bag and the energy of someone who is very proud of themselves.", "zh": "{partner} 拎着一个可疑纸袋突袭了你的自习角落，一脸 '我太机智了' 的得意。" },
+      "choices": [
+        { "id": "take_break", "text": { "en": "Take a proper snack break together", "zh": "正经地一起吃顿零食" }, "resultText": { "en": "Warm snacks, dumb jokes, ten real minutes of not being a student. You go back lighter.", "zh": "热乎的零食、傻乎乎的笑话、十分钟真正不当学生的时间。回去时整个人都轻了。" }, "effects": { "mood": 8, "love": 7, "stress": -7, "stamina": 3 } },
+        { "id": "eat_and_study", "text": { "en": "Eat at your desk, keep grinding", "zh": "边吃边在桌前继续啃" }, "resultText": { "en": "You snack one-handed and flip flashcards with the other. Efficient, slightly crumb-covered, a little sad.", "zh": "一手抓零食一手翻卡片。效率是有了，碎屑也有了，就是有点心酸。" }, "effects": { "knowledge": 5, "love": 3, "mood": 2, "stress": -2 } },
+        { "id": "share_walk", "text": { "en": "Walk {partner} home, then return", "zh": "送 {partner} 回去，再回来" }, "resultText": { "en": "A slow walk and fresh air cost you study time but reset your whole nervous system.", "zh": "慢慢走一段、吹吹风，花掉了复习时间，却把整个神经系统都重启了。" }, "effects": { "love": 6, "mood": 6, "stress": -6, "stamina": -2, "knowledge": -3 } }
+      ]
+    },
+    {
+      "id": "love_long_distance_logistics",
+      "title": { "en": "Long-Distance Calendar Tetris", "zh": "异地的日历俄罗斯方块" },
+      "stage": ["any"],
+      "tags": ["support", "planning"],
+      "weight": 9,
+      "text": { "en": "You and {partner} are in different cities, two calendars that refuse to agree, trying to find one weekend that works.", "zh": "你和 {partner} 在两座城市，两份死活对不上的日历，正努力凑出一个都行的周末。" },
+      "choices": [
+        { "id": "book_visit", "text": { "en": "Book the trip even if money's tight", "zh": "钱紧也先把车票订了" }, "resultText": { "en": "The ticket pings into your inbox and suddenly the whole month has a finish line worth running toward.", "zh": "车票确认信息一进邮箱，整个月突然有了一个值得冲的终点。" }, "effects": { "love": 9, "mood": 7, "stress": -5, "money": -8 } },
+        { "id": "video_compromise", "text": { "en": "Settle for a long video-call night", "zh": "退一步，约个视频长夜" }, "resultText": { "en": "Two screens, two cheap dinners, one shared movie out of sync by three seconds. It counts.", "zh": "两块屏幕、两份廉价晚饭、一部差了三秒的电影。这也算约会。" }, "effects": { "love": 5, "mood": 4, "stress": -3, "money": -1 } },
+        { "id": "postpone", "text": { "en": "Push it back until exams clear", "zh": "推到考试结束再说" }, "resultText": { "en": "Sensible for your grades, quietly heavy for both of you. {partner} understands, which somehow makes it worse.", "zh": "对成绩很理智，对你俩都有点闷。{partner} 表示理解，反而更让你心里发酸。" }, "effects": { "knowledge": 6, "love": -2, "mood": -3, "stress": 2 } }
+      ]
+    },
+    {
+      "id": "love_tiny_budget_date",
+      "title": { "en": "A Date on a Student Budget", "zh": "学生预算的迷你约会" },
+      "stage": ["any"],
+      "tags": ["support", "rest"],
+      "weight": 10,
+      "text": { "en": "{partner} proposes a date with a budget roughly the size of a vending-machine coffee. Challenge accepted.", "zh": "{partner} 提议来场约会，预算大概等于自动贩卖机一杯咖啡。挑战接受。" },
+      "choices": [
+        { "id": "park_picnic", "text": { "en": "Grocery-store picnic in the park", "zh": "超市采购，公园野餐" }, "resultText": { "en": "Bread, two snacks, one bench, zero stress. Easily the best three dollars of the semester.", "zh": "面包、两份小零食、一条长椅、零压力。绝对是这学期花得最值的几块钱。" }, "effects": { "mood": 9, "love": 8, "stress": -8, "money": -2 } },
+        { "id": "study_date", "text": { "en": "Turn it into a cozy study date", "zh": "改成温馨自习约会" }, "resultText": { "en": "You both read in comfortable silence, knees touching under the table. Productive and quietly lovely.", "zh": "你俩在舒服的沉默里各看各的，桌下膝盖轻轻挨着。又高产又默默地甜。" }, "effects": { "knowledge": 5, "love": 4, "mood": 3, "stress": -3 } },
+        { "id": "splurge_little", "text": { "en": "Splurge on one nice dessert to share", "zh": "奢侈一次，合吃一份好甜点" }, "resultText": { "en": "One fancy slice, two forks, an embarrassing amount of joy. Worth blowing the budget.", "zh": "一块讲究的甜点、两把叉子、过分多的快乐。超预算也认了。" }, "effects": { "love": 7, "mood": 7, "stress": -5, "money": -5 } }
+      ]
+    },
+    {
+      "id": "love_guilty_for_busy",
+      "title": { "en": "Sorry I've Been a Ghost", "zh": "抱歉我最近像消失了" },
+      "stage": ["any"],
+      "tags": ["support", "stress"],
+      "weight": 10,
+      "condition": { "maxStats": { "mood": 60 } },
+      "text": { "en": "You catch yourself feeling guilty for being so buried lately. {partner} hasn't complained once, which somehow makes you feel guiltier.", "zh": "你突然觉得最近埋头太久、有点亏欠。{partner} 一句没抱怨，反而让你更过意不去。" },
+      "choices": [
+        { "id": "honest_text", "text": { "en": "Send an honest, soft text about it", "zh": "发条坦白又温柔的消息" }, "resultText": { "en": "{partner} replies that loving a busy person is not a hardship, it's just timing. Your chest unknots.", "zh": "{partner} 回你：爱一个忙人不是受苦，只是时机问题。你胸口那个结松开了。" }, "effects": { "love": 8, "mood": 7, "stress": -6 } },
+        { "id": "overcompensate", "text": { "en": "Plan an elaborate make-up day", "zh": "策划一个隆重的补偿日" }, "resultText": { "en": "Ambitious plans, real money, real fun, but you both know presence beats production value.", "zh": "计划宏大、真金白银、也真的开心，可你俩都明白：人在场，比排场重要。" }, "effects": { "love": 5, "mood": 4, "stress": 2, "money": -7 } },
+        { "id": "bottle_it", "text": { "en": "Say nothing, just power through", "zh": "啥也不说，硬扛过去" }, "resultText": { "en": "You bury it under more flashcards. The guilt doesn't leave; it just files itself away for later.", "zh": "你用更多卡片把它埋了。愧疚没走，只是给自己存了个档，留着以后再说。" }, "effects": { "knowledge": 5, "love": -2, "mood": -4, "stress": 4 } }
+      ]
+    },
+    {
+      "id": "love_go_to_sleep",
+      "title": { "en": "The Tooth Can Wait, Your Brain Cannot", "zh": "牙能等，你的脑子不能" },
+      "stage": ["any"],
+      "tags": ["support", "rest"],
+      "weight": 11,
+      "condition": { "maxStats": { "mood": 60 } },
+      "text": { "en": "It is 1 a.m. {partner} texts: 'the tooth can wait, your nervous system cannot. go to sleep.'", "zh": "凌晨一点，{partner} 发来：'牙能等，你的神经系统不能。去睡觉。'" },
+      "choices": [
+        { "id": "obey", "text": { "en": "Actually listen and go to bed", "zh": "真的听话，去睡了" }, "resultText": { "en": "You close the laptop mid-sentence. Tomorrow-you will write a thank-you note to past-you.", "zh": "你在句子写一半时合上电脑。明天的你会给今天的你写封感谢信。" }, "effects": { "stamina": 9, "mood": 6, "stress": -8, "love": 5, "knowledge": -2 } },
+        { "id": "one_more_hour", "text": { "en": "Negotiate 'just one more hour'", "zh": "讨价还价 '就再一小时'" }, "resultText": { "en": "One hour becomes ninety minutes. You learn a little more and sleep a little worse.", "zh": "一小时拖成了九十分钟。多学了一点，也睡得差了一点。" }, "effects": { "knowledge": 4, "stamina": -3, "stress": 1, "love": 1 } },
+        { "id": "send_selfie", "text": { "en": "Send a tragic study selfie back", "zh": "回一张悲壮的学习自拍" }, "resultText": { "en": "{partner} replies with three crying-laughing faces and a firm 'BED. NOW.' You comply, grinning.", "zh": "{partner} 回了三个笑哭，外加坚定的 '上。床。现。在。' 你笑着照办了。" }, "effects": { "love": 6, "mood": 5, "stress": -5, "stamina": 4 } }
+      ]
+    },
+    {
+      "id": "love_celebrate_small_win",
+      "title": { "en": "A Win Worth a Tiny Party", "zh": "值得开个小派对的胜利" },
+      "stage": ["any"],
+      "tags": ["support", "confidence"],
+      "weight": 10,
+      "text": { "en": "You passed the thing, or nailed one tricky procedure, and {partner} insists this absolutely requires celebrating.", "zh": "你过了那个考核，或者搞定了一个棘手操作，{partner} 坚持这绝对值得庆祝一下。" },
+      "choices": [
+        { "id": "celebrate", "text": { "en": "Let {partner} make a fuss", "zh": "让 {partner} 大张旗鼓一回" }, "resultText": { "en": "A goofy little toast and genuine pride in {partner}'s eyes. You let yourself feel competent for once.", "zh": "一句傻气的祝酒词，加上 {partner} 眼里真心的骄傲。你难得允许自己觉得 '我挺行的'。" }, "effects": { "confidence": 7, "mood": 8, "love": 7, "stress": -5, "money": -3 } },
+        { "id": "downplay", "text": { "en": "Shrug it off, it's not a big deal", "zh": "摆摆手，没什么大不了" }, "resultText": { "en": "{partner} gently disagrees and celebrates anyway, but you keep half the joy locked in modesty.", "zh": "{partner} 温柔地不同意，照样庆祝，可你把一半的开心锁在了谦虚里。" }, "effects": { "confidence": 2, "love": 3, "mood": 2 } },
+        { "id": "back_to_work", "text": { "en": "Toast fast, next exam looms", "zh": "速干一杯，下个考试在逼近" }, "resultText": { "en": "Five minutes of celebration, then back to the grind. The momentum stays; the warmth fades quickly.", "zh": "庆祝五分钟，回去接着卷。势头留下了，暖意散得快了点。" }, "effects": { "knowledge": 5, "confidence": 3, "stress": 2, "love": 1 } }
+      ]
+    },
+    {
+      "id": "love_small_misunderstanding",
+      "title": { "en": "A Misread Text, Quietly Fixed", "zh": "一条会错意的消息，悄悄理顺" },
+      "stage": ["any"],
+      "tags": ["support", "stress"],
+      "weight": 9,
+      "condition": { "maxStats": { "mood": 60 } },
+      "text": { "en": "A tired one-word reply from you landed wrong, and {partner} seems a little off. It's small, but it's sitting there.", "zh": "你累到只回了一个字，结果被误会了，{partner} 好像有点不对劲。事不大，但就那么悬着。" },
+      "choices": [
+        { "id": "talk_it_out", "text": { "en": "Call and clear it up kindly", "zh": "打个电话，好好说开" }, "resultText": { "en": "Two minutes of honesty: you were just fried, not cold. {partner} laughs, relieved, and so are you.", "zh": "两分钟坦白：你只是累瘫了，不是冷淡。{partner} 松口气笑了，你也是。" }, "effects": { "love": 8, "mood": 6, "stress": -6, "knowledge": -1 } },
+        { "id": "send_meme", "text": { "en": "Defuse it with a dumb meme", "zh": "甩个沙雕表情包化解" }, "resultText": { "en": "The meme works instantly, but the real conversation stays politely postponed for another day.", "zh": "表情包当场奏效，可那场真正的对话还是被礼貌地往后挪了。" }, "effects": { "love": 4, "mood": 4, "stress": -2 } },
+        { "id": "assume_fine", "text": { "en": "Assume it'll blow over on its own", "zh": "觉得过两天自己就好了" }, "resultText": { "en": "It probably will, but you both carry a low hum of awkwardness through the evening.", "zh": "大概是会好，可一整晚你俩都背着一丝低低的别扭。" }, "effects": { "knowledge": 3, "love": -3, "mood": -3, "stress": 3 } }
+      ]
+    },
+    {
+      "id": "love_let_yourself_be_supported",
+      "title": { "en": "Letting Someone Carry a Tab for You", "zh": "让别人替你扛一个 tab" },
+      "stage": ["any"],
+      "tags": ["support", "rest"],
+      "weight": 10,
+      "condition": { "maxStats": { "mood": 60 } },
+      "text": { "en": "You are visibly running on fumes, and {partner} offers to handle dinner, errands, everything, so you can breathe. Accepting feels weirdly hard.", "zh": "你明显已经在用爱发电了，{partner} 主动包揽晚饭、跑腿、一切，让你喘口气。可接受这份好意竟然莫名地难。" },
+      "choices": [
+        { "id": "accept", "text": { "en": "Accept, and just say thank you", "zh": "接受，然后好好说声谢谢" }, "resultText": { "en": "You let yourself be taken care of for one evening. Turns out, you don't have to earn rest. Suspiciously mature.", "zh": "你允许自己被照顾了一晚。原来休息不用 '挣'。这操作意外地成熟。" }, "effects": { "stamina": 7, "mood": 8, "stress": -9, "love": 7 } },
+        { "id": "split", "text": { "en": "Accept half, insist on doing the rest", "zh": "接受一半，剩下硬要自己来" }, "resultText": { "en": "A reasonable compromise that helps a bit, though {partner} side-eyes you for still doing the dishes.", "zh": "一个合理的折中，确实缓了点，不过 {partner} 还是斜眼看你那个非要洗碗的样子。" }, "effects": { "stamina": 3, "mood": 4, "stress": -4, "love": 4 } },
+        { "id": "decline", "text": { "en": "Politely decline, you've got it", "zh": "礼貌拒绝，你能搞定" }, "resultText": { "en": "You handle it all yourself like always. Independent, technically fine, and quietly more tired than you admit.", "zh": "你像往常一样全自己扛了。独立、勉强算行，只是比你承认的更累一点。" }, "effects": { "stamina": -3, "confidence": 2, "stress": 3, "love": -1 } }
+      ]
+    },
+    {
+      "id": "love_losing_fight_tiny_tooth",
+      "title": { "en": "I Am Losing a Fight With a Tiny Tooth", "zh": "我正在输给一颗小小的牙" },
+      "stage": ["any"],
+      "tags": ["support", "stress"],
+      "weight": 11,
+      "text": { "en": "Sim lab is humbling you. You draft a dramatic text to {partner}: 'send help, I am losing a fight with a tiny tooth.'", "zh": "sim lab 把你按在地上摩擦。你给 {partner} 打了条戏精消息：'快来救我，我正在输给一颗小小的牙。'" },
+      "choices": [
+        { "id": "send_it", "text": { "en": "Send the dramatic text", "zh": "把这条戏精消息发出去" }, "resultText": { "en": "{partner} replies: 'believe in the tooth's eventual defeat, soldier.' You laugh, breathe, and your hands steady.", "zh": "{partner} 回：'相信这颗牙终将落败，战士。' 你笑出声、喘口气，手也稳了。" }, "effects": { "love": 7, "mood": 8, "stress": -7, "handSkill": 2 } },
+        { "id": "vent_long", "text": { "en": "Full voice-memo meltdown rant", "zh": "录段语音，彻底崩溃吐槽" }, "resultText": { "en": "You unload two minutes of despair; {partner} listens to all of it. Cathartic, if mildly unhinged.", "zh": "你倾倒了两分钟的绝望，{partner} 全程听完。很解压，就是有点癫。" }, "effects": { "love": 5, "mood": 5, "stress": -5, "stamina": -2 } },
+        { "id": "tough_it_out", "text": { "en": "Delete it, just try again quietly", "zh": "删掉，默默再练一次" }, "resultText": { "en": "You reset and repeat the drill. The skill creeps up a notch, but no one talked you off the ledge.", "zh": "你重置好再练一遍。手感悄悄涨了一格，只是没人把你从崩溃边缘劝下来。" }, "effects": { "handSkill": 5, "stress": 3, "mood": -2 } }
+      ]
+    }
+  ]
+}

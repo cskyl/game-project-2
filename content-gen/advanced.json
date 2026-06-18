@@ -1,0 +1,149 @@
+{
+  "events": [
+    {
+      "id": "adv_mobile_clinic_day",
+      "title": { "en": "The Mobile Clinic Pulls Up", "zh": "流动诊所开进村" },
+      "stage": ["advanced"],
+      "tags": ["community", "publicImpact"],
+      "minSemester": 9,
+      "weight": 11,
+      "text": { "en": "The mobile clinic parks at a community center two hours from campus, and the sign-up sheet is already full before you've finished your coffee. There are more mouths than chairs, and the day stretches long.", "zh": "流动诊所停在离学校两小时车程的社区中心，你咖啡还没喝完，预约单就满了。需要看的人比椅子多，今天注定是漫长的一天。" },
+      "choices": [
+        { "id": "see_everyone", "text": { "en": "Squeeze in every last patient", "zh": "硬塞下每一个病人" }, "resultText": { "en": "You finish at dusk, exhausted but full of stories, and a grandmother insists you take her homemade dumplings.", "zh": "你忙到天黑，累得不行，却满载故事，一位奶奶非要塞给你一盒自家包的饺子。" }, "effects": { "publicImpact": 12, "reputation": 6, "stamina": -10, "stress": 6, "mood": 5 } },
+        { "id": "pace_quality", "text": { "en": "Cap the list, do each one well", "zh": "限号，把每个都做好" }, "resultText": { "en": "Fewer patients, better dentistry, and you leave with energy to spare, though you keep thinking about the names you couldn't reach.", "zh": "看的人少了，但每一颗牙都做得扎实，你还有余力，只是一直惦记着没排上号的名字。" }, "effects": { "clinicalSense": 6, "publicImpact": 6, "stamina": -3, "mood": 2 } },
+        { "id": "train_locals", "text": { "en": "Teach two volunteers to triage", "zh": "教两个志愿者做初筛" }, "resultText": { "en": "You move slower today but leave behind people who can keep helping after the van drives off.", "zh": "今天慢了点，但你留下了两个能在车开走后继续帮忙的人。" }, "effects": { "publicImpact": 10, "empathy": 5, "knowledge": -2, "stamina": -5 } }
+      ]
+    },
+    {
+      "id": "adv_underserved_outreach",
+      "title": { "en": "Where the Nearest Dentist Is Far", "zh": "最近的牙医也很远" },
+      "stage": ["advanced"],
+      "tags": ["community", "publicImpact"],
+      "minSemester": 9,
+      "weight": 10,
+      "condition": { "minStats": { "empathy": 40 } },
+      "text": { "en": "Your rotation sends you to a town where the nearest clinic is a ninety-minute bus ride away. Half your patients haven't seen a dentist since before you started high school.", "zh": "轮转把你派到一个小镇，最近的诊所坐公交也要一个半小时。你一半的病人上次看牙时，你还没上高中。" },
+      "choices": [
+        { "id": "prevention_talk", "text": { "en": "Run a free prevention workshop", "zh": "办一场免费预防讲座" }, "resultText": { "en": "Thirty people show up, kids included, and you realize a toothbrush demo lands harder than any lecture you've sat through.", "zh": "来了三十个人，还有小孩，你发现一个刷牙示范比你听过的任何 lecture 都管用。" }, "effects": { "publicImpact": 11, "empathy": 6, "stamina": -5, "confidence": 4 } },
+        { "id": "extra_chairtime", "text": { "en": "Stay late seeing urgent cases", "zh": "留下来加班看急诊" }, "resultText": { "en": "You handle real pain that's been waiting months, and your hands are steadier for it, even if your back disagrees.", "zh": "你处理了拖了几个月的真实疼痛，手更稳了，虽然你的腰表示不同意。" }, "effects": { "clinicalSense": 8, "publicImpact": 7, "stamina": -9, "stress": 4 } },
+        { "id": "rest_for_tomorrow", "text": { "en": "Pace yourself for the whole week", "zh": "留着力气过完整周" }, "resultText": { "en": "You head back to the guesthouse early; the tooth can wait, your nervous system cannot, and tomorrow you're sharper.", "zh": "你早点回了招待所——牙可以等，你的神经系统不能等，第二天你状态明显好多了。" }, "effects": { "stress": -8, "stamina": 5, "publicImpact": 2, "mood": 4 } }
+      ]
+    },
+    {
+      "id": "adv_board_exam_grind",
+      "title": { "en": "Eighty Tabs and One Board Exam", "zh": "八十个标签页和一场 board" },
+      "stage": ["advanced"],
+      "tags": ["career", "research"],
+      "minSemester": 10,
+      "weight": 12,
+      "condition": { "maxStats": { "stress": 80 } },
+      "text": { "en": "The board exam is six weeks out and your browser has eighty tabs open, none of which you remember opening. The whole syllabus is suddenly both review and total novelty.", "zh": "board 还有六周，你的浏览器开了八十个标签页，没一个记得是什么时候开的。整本考纲突然既是复习又是全新内容。" },
+      "choices": [
+        { "id": "all_in_cram", "text": { "en": "Lock in for a marathon week", "zh": "拼一个魔鬼复习周" }, "resultText": { "en": "Your recall sharpens fast, but by Friday you're quoting flashcards in your sleep and your partner gently hides your laptop.", "zh": "你的记忆迅速变强，但到周五你睡觉都在背 flashcard，{partner} 默默把你的笔记本电脑藏了起来。" }, "effects": { "knowledge": 12, "stress": 9, "stamina": -8 } },
+        { "id": "study_group", "text": { "en": "Form a small study group", "zh": "组个小复习组" }, "resultText": { "en": "Explaining out loud catches gaps you'd never have noticed, and the snacks rotation keeps morale weirdly high.", "zh": "讲出声反而暴露了你自己都没发现的漏洞，而且轮流带零食让大家士气莫名地高。" }, "effects": { "knowledge": 8, "confidence": 5, "mood": 4, "stress": -2 } },
+        { "id": "structured_plan", "text": { "en": "Build a calm six-week schedule", "zh": "排一个从容的六周计划" }, "resultText": { "en": "Suspiciously mature, surprisingly effective: you cover less per day but actually retain it, and you still sleep.", "zh": "成熟得有点可疑，效果却出奇地好：每天看得不多，但是真记住了，而且还睡得着。" }, "effects": { "knowledge": 7, "stress": -5, "confidence": 4, "stamina": 2 } },
+        { "id": "one_day_off", "text": { "en": "Take a guilt-free day off first", "zh": "先心安理得地休一天" }, "resultText": { "en": "You do absolutely nothing useful and come back genuinely able to think again, which turns out to be the point.", "zh": "你一整天什么正事都没干，回来后脑子真的能转了——原来这才是重点。" }, "effects": { "stress": -10, "stamina": 8, "knowledge": -2, "mood": 6 } }
+      ]
+    },
+    {
+      "id": "adv_residency_or_job",
+      "title": { "en": "Residency or a Real Paycheck", "zh": "读住院医还是去上班" },
+      "stage": ["advanced"],
+      "tags": ["career", "research"],
+      "minSemester": 10,
+      "weight": 11,
+      "text": { "en": "Two envelopes sit on your desk: a residency offer that means three more lean years, and a job that means rent paid and a normal weekend. Both feel right on alternate days.", "zh": "桌上摆着两个信封：一个住院医 offer，意味着再苦三年；一个工作 offer，意味着付得起房租、过得上正常周末。两个在不同的日子里都觉得对。" },
+      "choices": [
+        { "id": "take_residency", "text": { "en": "Commit to the residency", "zh": "去读住院医" }, "resultText": { "en": "Lean years ahead, but you'll come out doing the work you actually daydream about. {partner} just asks for one decent vacation a year.", "zh": "未来几年会很苦，但你最终能做你真正向往的工作。{partner} 只要求一年来一次像样的旅行。" }, "effects": { "knowledge": 8, "clinicalSense": 6, "money": -8, "stress": 5, "confidence": 4 } },
+        { "id": "take_job", "text": { "en": "Sign the job offer", "zh": "签那份工作" }, "resultText": { "en": "You'll have weekends and a couch you can afford; the prestige itch fades faster than your seniors warned you it would.", "zh": "你会有周末，还有买得起的沙发；那种对头衔的痒，消退得比学长警告的快得多。" }, "effects": { "money": 10, "stress": -6, "mood": 5, "reputation": -2, "knowledge": -2 } },
+        { "id": "ask_mentor", "text": { "en": "Talk it through with a mentor", "zh": "找导师聊一聊" }, "resultText": { "en": "She doesn't tell you what to do, but the right questions make the noise quieter, and you sleep on it with a clearer head.", "zh": "她没替你做决定，但几个对的问题让脑子里的杂音小了，你揣着清醒的脑袋睡了一觉。" }, "effects": { "confidence": 5, "stress": -4, "empathy": 3 } }
+      ]
+    },
+    {
+      "id": "adv_choosing_specialty",
+      "title": { "en": "Which Door to Walk Through", "zh": "走哪一扇门" },
+      "stage": ["advanced"],
+      "tags": ["career", "research"],
+      "minSemester": 9,
+      "weight": 10,
+      "text": { "en": "Everyone keeps asking what you'll specialize in, as if it's a personality you forgot to pick. You like three different things and your future self refuses to text back.", "zh": "所有人都在问你要选哪个专业，好像那是一个你忘了挑的性格。你喜欢三个不同的方向，而未来的你死活不回消息。" },
+      "choices": [
+        { "id": "follow_skill", "text": { "en": "Chase what your hands love", "zh": "选你的手最爱的那个" }, "resultText": { "en": "You pick the discipline where you lose track of time at the chair; the money may follow later, the joy is here now.", "zh": "你选了那个让你在椅旁忘记时间的方向；钱也许以后会来，快乐现在就在。" }, "effects": { "handSkill": 8, "confidence": 6, "money": -3, "mood": 5 } },
+        { "id": "follow_research", "text": { "en": "Lean toward the research-heavy path", "zh": "倾向研究多的那条路" }, "resultText": { "en": "More papers, more questions that don't have answers yet, and a quiet thrill at being the one who asks them.", "zh": "更多 paper，更多还没有答案的问题，以及一种当那个提问者的、安静的兴奋。" }, "effects": { "research": 10, "knowledge": 6, "stress": 4, "reputation": 3 } },
+        { "id": "follow_people", "text": { "en": "Pick the people-facing specialty", "zh": "选最贴近人的专业" }, "resultText": { "en": "You realize the part you'll never get tired of is the talking, the calming, the small human repair.", "zh": "你意识到自己永远不会厌倦的，是说话、安抚、那一点点人与人之间的修补。" }, "effects": { "empathy": 9, "clinicalSense": 4, "confidence": 4, "reputation": 2 } },
+        { "id": "stay_undecided", "text": { "en": "Give yourself one more year", "zh": "再给自己一年" }, "resultText": { "en": "You decide not to decide yet, and the panic loosens; some doors stay open longer than the rumors claim.", "zh": "你决定先不决定，焦虑松开了些——有些门开着的时间，比传言说的久。" }, "effects": { "stress": -6, "knowledge": 3, "reputation": -2, "mood": 3 } }
+      ]
+    },
+    {
+      "id": "adv_mentoring_a_junior",
+      "title": { "en": "The Nervous First-Year at Your Elbow", "zh": "黏在你身边的紧张新生" },
+      "stage": ["advanced"],
+      "tags": ["community", "reputation"],
+      "minSemester": 9,
+      "weight": 10,
+      "text": { "en": "A first-year shadows you for the week, hands shaking, asking the exact questions you once did. You can feel how far you've come just by how calm you sound.", "zh": "一个一年级新生跟了你一周，手抖着，问的全是你当年问过的问题。光听自己说话有多稳，你就知道走了多远。" },
+      "choices": [
+        { "id": "deep_teach", "text": { "en": "Slow down and really teach", "zh": "放慢节奏好好教" }, "resultText": { "en": "Your own clinic flow gets slower, but watching the panic leave their face is its own strange paycheck.", "zh": "你自己的看诊节奏慢了，但看着对方脸上的慌乱褪去，是一种奇怪的、值得的回报。" }, "effects": { "empathy": 8, "reputation": 6, "clinicalSense": -2, "mood": 5 } },
+        { "id": "honest_story", "text": { "en": "Tell them about your worst week", "zh": "跟 ta 讲你最惨的一周" }, "resultText": { "en": "You admit you cried in a supply closet in year one; they exhale like they've been holding it for months.", "zh": "你坦白一年级时在器材间哭过；对方长舒一口气，像憋了好几个月。" }, "effects": { "empathy": 7, "confidence": 4, "mood": 4 } },
+        { "id": "stay_focused", "text": { "en": "Keep your own cases on track", "zh": "先把自己的病例顾好" }, "resultText": { "en": "You answer questions between patients but protect your day; the junior survives, and so does your schedule.", "zh": "你在看诊间隙回答问题，但守住了自己的节奏；新生活下来了，你的日程也活下来了。" }, "effects": { "clinicalSense": 5, "knowledge": 3, "reputation": -1, "stress": -2 } }
+      ]
+    },
+    {
+      "id": "adv_leadership_moment",
+      "title": { "en": "Someone Has to Say It", "zh": "总得有人开口" },
+      "stage": ["advanced"],
+      "tags": ["reputation", "career"],
+      "minSemester": 10,
+      "weight": 9,
+      "text": { "en": "The clinic's broken sterilizer has been 'on the list' for a month, and at the staff meeting everyone goes quiet. You're senior enough now that your voice would actually carry.", "zh": "诊所那台坏掉的消毒器已经被列入待修一个月了，员工会上所有人都沉默着。你现在资历够了，开口是真的有分量的。" },
+      "choices": [
+        { "id": "speak_up", "text": { "en": "Raise it, clearly and calmly", "zh": "冷静而清楚地提出来" }, "resultText": { "en": "It's uncomfortable for ninety seconds, then the fix gets scheduled; a few juniors quietly thank you in the hall.", "zh": "尴尬了九十秒，然后维修排上了日程；几个学弟学妹在走廊里悄悄谢了你。" }, "effects": { "reputation": 9, "confidence": 6, "stress": 4 } },
+        { "id": "private_note", "text": { "en": "Email the supervisor privately", "zh": "私下给主管发邮件" }, "resultText": { "en": "Less heroic, just as effective; the problem moves without anyone losing face, which is its own kind of skill.", "zh": "没那么英雄主义，却一样有效；问题解决了，谁的面子都没丢——这本身也是一种能力。" }, "effects": { "reputation": 5, "confidence": 3, "empathy": 3 } },
+        { "id": "let_it_slide", "text": { "en": "Stay out of it for now", "zh": "暂时不掺和" }, "resultText": { "en": "You keep your head down; the sterilizer stays broken another week, and the silence sits a little heavier on you.", "zh": "你选择低调；消毒器又坏了一周，那份沉默压在你身上重了一点。" }, "effects": { "stress": -3, "reputation": -4, "mood": -2 } }
+      ]
+    },
+    {
+      "id": "adv_graduation_prep",
+      "title": { "en": "Cap, Gown, and a Long To-Do List", "zh": "学位帽、袍子和一长串待办" },
+      "stage": ["advanced"],
+      "tags": ["career", "community"],
+      "minSemester": 10,
+      "weight": 9,
+      "text": { "en": "Graduation is three weeks away and the logistics are absurd: final sign-offs, a gown that doesn't fit, and family asking for the exact ceremony time you don't have yet.", "zh": "毕业还有三周，杂事多得离谱：最后的签字、不合身的袍子，还有家里人追问你自己都还不知道的典礼具体时间。" },
+      "choices": [
+        { "id": "handle_logistics", "text": { "en": "Knock out the whole checklist", "zh": "一口气清掉清单" }, "resultText": { "en": "You spend a brutal day on forms and tailoring, then sleep like the dead, finally able to feel that this is real.", "zh": "你花了痛苦的一天处理表格和改衣服，然后睡得像块石头，终于能感觉到这一切是真的了。" }, "effects": { "stress": 5, "stamina": -6, "mood": 6, "confidence": 3 } },
+        { "id": "celebrate_classmates", "text": { "en": "Grab dinner with your cohort", "zh": "和同届的人吃顿饭" }, "resultText": { "en": "The forms can wait one night; you laugh about year one until midnight and remember why you survived it together.", "zh": "表格可以等一晚；你们笑着聊一年级的糗事到半夜，想起当初是怎么一起熬过来的。" }, "effects": { "mood": 8, "stress": -6, "love": 2, "stamina": -2 } },
+        { "id": "bring_family_in", "text": { "en": "Plan it around your family", "zh": "围着家人安排一切" }, "resultText": { "en": "You sort out their travel and seats first; logistics get messier for you, but their faces in the crowd will be worth it.", "zh": "你先把他们的车票和座位安排好；你这边更乱了，但典礼上人群里他们的脸，会值得的。" }, "effects": { "empathy": 6, "mood": 5, "stress": 4, "stamina": -3 } }
+      ]
+    },
+    {
+      "id": "adv_how_far_youve_come",
+      "title": { "en": "The Drawer of Old Casts", "zh": "装着旧模型的抽屉" },
+      "stage": ["advanced"],
+      "tags": ["career", "research"],
+      "minSemester": 10,
+      "weight": 8,
+      "condition": { "minStats": { "confidence": 45 } },
+      "text": { "en": "Cleaning out your locker, you find your first-ever wax-up, lumpy and proud, next to last month's work. The gap between them stops you cold for a second.", "zh": "清理柜子时，你翻出了人生第一个蜡型，歪歪扭扭却很自豪，旁边是上个月的作品。两者之间的差距让你愣了一下。" },
+      "choices": [
+        { "id": "keep_the_cast", "text": { "en": "Keep the lumpy first one", "zh": "留下那个歪歪的处女作" }, "resultText": { "en": "You wrap it in a paper towel and pocket it; on hard days, proof you've already done the impossible thing once.", "zh": "你用纸巾把它包好揣进口袋；难熬的日子里，它是你早就做成过不可能之事的证据。" }, "effects": { "confidence": 7, "mood": 6, "stress": -3 } },
+        { "id": "show_partner", "text": { "en": "Text a photo to {partner}", "zh": "拍照发给 {partner}" }, "resultText": { "en": "{partner} replies 'honestly iconic' and you laugh; being seen across the whole arc of this feels better than any grade.", "zh": "{partner} 回了句\"说真的有点帅\"，你笑了；被人见证了这一整段路，比任何分数都让人安心。" }, "effects": { "love": 6, "mood": 7, "stress": -4 } },
+        { "id": "write_reflection", "text": { "en": "Write down what changed", "zh": "写下到底变了什么" }, "resultText": { "en": "You journal for an hour, and naming the growth makes it solid; turns out reflection is its own quiet form of study.", "zh": "你写了一小时日记，把成长说清楚之后它就成形了；原来反思也是一种安静的学习。" }, "effects": { "research": 4, "confidence": 5, "knowledge": 3, "stress": -2 } }
+      ]
+    },
+    {
+      "id": "adv_giving_back",
+      "title": { "en": "Paying the Ladder Forward", "zh": "把梯子传下去" },
+      "stage": ["advanced"],
+      "tags": ["community", "publicImpact"],
+      "minSemester": 10,
+      "weight": 10,
+      "text": { "en": "A scholarship fund that once covered your instruments asks if you'd like to give a little time or money back, now that you're almost on the other side. You remember exactly how much it mattered.", "zh": "当年帮你出过器械费的助学金，问你现在快\"上岸\"了，愿不愿意回馈一点时间或金钱。你太清楚那笔钱当时有多重要了。" },
+      "choices": [
+        { "id": "donate_money", "text": { "en": "Pledge a small monthly gift", "zh": "认捐一笔小额月捐" }, "resultText": { "en": "It's not much on a new-grad budget, but it's automatic now, quietly buying some future student their first set of burs.", "zh": "对刚毕业的预算来说不算多，但已经设成自动扣款了，悄悄替将来某个学生买下 ta 的第一套钻针。" }, "effects": { "publicImpact": 8, "money": -5, "mood": 5 } },
+        { "id": "volunteer_time", "text": { "en": "Mentor next year's recipients", "zh": "去带下一届的受助学生" }, "resultText": { "en": "You sign up to advise three incoming students; your calendar groans, but their gratitude is embarrassingly fuel-like.", "zh": "你报名带三个新生；你的日程表叫苦不迭，但他们的感激让人不好意思地充满干劲。" }, "effects": { "publicImpact": 9, "empathy": 6, "stamina": -4, "reputation": 4 } },
+        { "id": "share_story", "text": { "en": "Speak at their welcome event", "zh": "在迎新会上讲两句" }, "resultText": { "en": "You tell a room of nervous newcomers it gets better and you mean it; a few of them will remember this for years.", "zh": "你对着一屋子紧张的新人说\"会好起来的\"，而且是认真的；其中几个会记好多年。" }, "effects": { "publicImpact": 7, "confidence": 5, "reputation": 3, "stress": 2 } }
+      ]
+    }
+  ]
+}

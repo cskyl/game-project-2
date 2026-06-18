@@ -1,0 +1,350 @@
+{
+  "events": [
+    {
+      "id": "clin_first_patient",
+      "title": { "en": "Your First Real Patient", "zh": "你的第一位真实病人" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["clinic", "patient", "confidence"],
+      "minSemester": 7,
+      "maxSemester": 11,
+      "weight": 11,
+      "condition": { "maxStats": { "confidence": 55 } },
+      "text": {
+        "en": "The chart is real, the chair is real, and the person sitting in it is a real human who trusted the appointment system. Your hands are doing that thing where they pretend they've never held an instrument before.",
+        "zh": "病历是真的，椅子是真的，坐在上面的也是一个真真切切信任了预约系统的活人。你的手又开始装作这辈子没拿过器械的样子。"
+      },
+      "choices": [
+        { "id": "breathe_first", "text": { "en": "Breathe, introduce yourself, go slow", "zh": "深呼吸，自我介绍，慢慢来" }, "resultText": { "en": "You say your name out loud and your shoulders drop two inches. Slow turns out to be steady.", "zh": "你把名字说出口，肩膀一下子松了下来。慢，原来就是稳。" }, "effects": { "confidence": 6, "empathy": 5, "stress": -3 } },
+        { "id": "rush_to_prove", "text": { "en": "Move fast to look competent", "zh": "动作麻利点显得专业" }, "resultText": { "en": "You look efficient and feel like a hummingbird. You finish, but your heart rate files a complaint.", "zh": "你看着很利落，心里却像只蜂鸟。活儿干完了，但你的心率提出了投诉。" }, "effects": { "handSkill": 3, "confidence": 4, "stress": 7 } },
+        { "id": "lean_on_faculty", "text": { "en": "Quietly ask faculty to shadow", "zh": "悄悄请带教在旁边盯着" }, "resultText": { "en": "Faculty hovers and nods. The patient never notices; you learn three things you'd have missed.", "zh": "带教在旁边盯着、点头。病人毫无察觉，你学到了三个本来会漏掉的细节。" }, "effects": { "knowledge": 5, "clinicalSense": 4, "confidence": -2 } }
+      ]
+    },
+    {
+      "id": "clin_will_it_hurt",
+      "title": { "en": "\"Will It Hurt?\"", "zh": "“会疼吗？”" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["patient", "empathy", "confidence"],
+      "minSemester": 7,
+      "weight": 10,
+      "text": {
+        "en": "Your patient grips the armrest before you've touched a single thing and asks the oldest question in dentistry: will it hurt?",
+        "zh": "你还什么都没碰，病人就攥紧了扶手，问出了牙科界最古老的那个问题：会疼吗？"
+      },
+      "choices": [
+        { "id": "honest_gentle", "text": { "en": "Be honest: a pinch, then numb", "zh": "如实说：先有点扎，然后就麻了" }, "resultText": { "en": "\"A small pinch, then nothing.\" They believe you because it's true, and it goes exactly that way.", "zh": "“先一点点扎，然后就没感觉了。”因为是真话，他们信了，结果也确实如此。" }, "effects": { "empathy": 6, "confidence": 4, "stress": -2 } },
+        { "id": "overpromise", "text": { "en": "Promise they'll feel nothing at all", "zh": "保证一点都不会疼" }, "resultText": { "en": "They feel the pinch you swore wouldn't come. Trust takes a small, avoidable dent.", "zh": "他们还是感觉到了你发誓不会有的那一下。信任出现了一道本可避免的小裂痕。" }, "effects": { "empathy": -4, "reputation": -2, "stress": 3 } },
+        { "id": "explain_each_step", "text": { "en": "Narrate every step before you do it", "zh": "每一步动手前都先讲一遍" }, "resultText": { "en": "Talking it through eats a few minutes but the white-knuckle grip relaxes. Worth it.", "zh": "讲解花了几分钟，但那双攥白的手松开了。值。" }, "effects": { "empathy": 5, "clinicalSense": 2, "stress": 2 } }
+      ]
+    },
+    {
+      "id": "clin_no_show",
+      "title": { "en": "The No-Show", "zh": "病人放鸽子了" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["clinic", "patient"],
+      "minSemester": 7,
+      "weight": 9,
+      "text": {
+        "en": "Twenty minutes past the appointment time, your chair is empty and your quota requirement is staring at you like an unread email.",
+        "zh": "约定时间过了二十分钟，你的椅位空着，而你的临床指标正像一封未读邮件一样盯着你。"
+      },
+      "choices": [
+        { "id": "call_reschedule", "text": { "en": "Call them and reschedule kindly", "zh": "打电话过去，好好改个时间" }, "resultText": { "en": "Turns out the bus stranded them. You rebook; they show up early next time, grateful.", "zh": "原来是公交把他们困住了。你重新约了时间，下次他们提早就来了，满是感激。" }, "effects": { "reputation": 4, "empathy": 3, "stress": -1 } },
+        { "id": "study_the_gap", "text": { "en": "Use the empty slot to study", "zh": "用这段空当复习" }, "resultText": { "en": "You crack open notes and actually absorb a chapter. The day isn't wasted, just rerouted.", "zh": "你翻开笔记，居然真把一章看进去了。这天没浪费，只是改道了。" }, "effects": { "knowledge": 6, "stress": -2, "confidence": 1 } },
+        { "id": "stew_about_quota", "text": { "en": "Spiral about your requirement count", "zh": "为指标焦虑到原地打转" }, "resultText": { "en": "You spend the slot doing anxiety math. The numbers don't move; your stress does.", "zh": "你花了一整段时间做焦虑算术。数字没动，焦虑倒是涨了。" }, "effects": { "stress": 8, "mood": -4, "knowledge": -1 } },
+        { "id": "grab_walkin", "text": { "en": "Ask the desk for a walk-in", "zh": "去前台问有没有 walk-in" }, "resultText": { "en": "The desk hands you a walk-in screening. Unexpected case, unexpectedly good practice.", "zh": "前台塞给你一个临时检查的病人。意外的病例，意外地很练手。" }, "effects": { "clinicalSense": 4, "stress": 3, "reputation": 2 } }
+      ]
+    },
+    {
+      "id": "clin_late_patient",
+      "title": { "en": "Twenty-Five Minutes Late", "zh": "迟到了二十五分钟" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["clinic", "patient", "empathy"],
+      "minSemester": 7,
+      "weight": 9,
+      "text": {
+        "en": "Your patient rushes in apologizing, hair still wet, coat half on. There's not really enough time left to do the whole plan.",
+        "zh": "病人冲进来连声道歉，头发还是湿的，外套挂了一半。说实话，剩下的时间已经不够做完整个计划了。"
+      },
+      "choices": [
+        { "id": "do_partial", "text": { "en": "Do what fits, schedule the rest", "zh": "能做多少做多少，剩下的再约" }, "resultText": { "en": "You handle the priority step well and rebook the rest. Honest, tidy, no drama.", "zh": "你把最要紧的一步做漂亮了，其余的另约。诚实、干净、不闹腾。" }, "effects": { "clinicalSense": 4, "empathy": 3, "reputation": 2 } },
+        { "id": "cram_it_all", "text": { "en": "Try to cram the full plan in", "zh": "硬塞，把全部计划做完" }, "resultText": { "en": "You finish by sprinting and your notes suffer. The tooth's fine; your focus is fried.", "zh": "你一路狂奔做完了，病历记得潦草。牙没问题，你的脑子先烧了。" }, "effects": { "handSkill": 2, "stress": 9, "mood": -3 } },
+        { "id": "guilt_trip", "text": { "en": "Let them know they were quite late", "zh": "让他们知道这次真的挺晚" }, "resultText": { "en": "They get quieter and apologize more. You realize the lecture helped no one.", "zh": "他们变得更安静，道歉得更多了。你意识到这通说教谁都没帮上。" }, "effects": { "empathy": -3, "reputation": -2, "mood": -1 } }
+      ]
+    },
+    {
+      "id": "clin_treatment_plan",
+      "title": { "en": "Building the Treatment Plan", "zh": "制定治疗计划" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["clinicalSense", "patient"],
+      "minSemester": 7,
+      "weight": 10,
+      "text": {
+        "en": "Three reasonable options, one patient, and that quiet pressure to pick the plan that looks most impressive on your case log.",
+        "zh": "三个都说得通的方案，一个病人，还有那股悄悄的压力——选个在你病例本上最好看的。"
+      },
+      "choices": [
+        { "id": "patient_first", "text": { "en": "Pick what's best for the patient", "zh": "选对病人最好的那个" }, "resultText": { "en": "You choose the simpler, sturdier plan. Less flashy for your log, exactly right for them.", "zh": "你选了更简单、更耐用的方案。病例本上不够炫，但对他们刚刚好。" }, "effects": { "clinicalSense": 6, "empathy": 5, "reputation": 3 } },
+        { "id": "impressive_case", "text": { "en": "Pick the more impressive procedure", "zh": "选更能撑场面的术式" }, "resultText": { "en": "Great for your portfolio, heavier for them. Faculty raises one slow eyebrow.", "zh": "对你的作品集很好，对他们负担更重。带教缓缓挑了挑眉。" }, "effects": { "handSkill": 4, "clinicalSense": -2, "reputation": -1 } },
+        { "id": "ask_faculty_input", "text": { "en": "Talk all three through with faculty", "zh": "把三个方案都跟带教过一遍" }, "resultText": { "en": "Faculty walks you through the tradeoffs. Slower today, sharper for every plan after.", "zh": "带教带你把利弊一条条捋了。今天慢了点，但往后每个方案你都更利落了。" }, "effects": { "knowledge": 5, "clinicalSense": 4, "stress": 1 } }
+      ]
+    },
+    {
+      "id": "clin_waiting_approval",
+      "title": { "en": "Waiting for the Check-Off", "zh": "等带教签字" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["clinic", "confidence"],
+      "minSemester": 7,
+      "weight": 9,
+      "text": {
+        "en": "You're prepped, gloved, and ready, but faculty is across the clinic mid-conversation. Your patient waits; your gloves slowly fog with patience.",
+        "zh": "你准备好了，戴好手套，万事俱备，但带教在诊室另一头聊得正起劲。病人等着，你的手套也在耐心里慢慢起雾。"
+      },
+      "choices": [
+        { "id": "use_time_well", "text": { "en": "Chat with your patient while you wait", "zh": "等的时候跟病人聊聊天" }, "resultText": { "en": "You learn they're a beekeeper. The wait flies by and rapport quietly doubles.", "zh": "你听说他们是养蜂人。等待飞快过去，关系悄悄翻了倍。" }, "effects": { "empathy": 5, "mood": 3, "stress": -2 } },
+        { "id": "flag_politely", "text": { "en": "Politely flag that you're ready", "zh": "礼貌地示意你这边好了" }, "resultText": { "en": "You catch faculty's eye with a small wave. They come over sooner; nobody's annoyed.", "zh": "你一个小招手抓住带教的目光。他们提早过来了，谁都没不高兴。" }, "effects": { "confidence": 4, "clinicalSense": 2, "stress": -1 } },
+        { "id": "start_without", "text": { "en": "Start the irreversible step solo", "zh": "不等了，自己先做不可逆的一步" }, "resultText": { "en": "You jump ahead and faculty has to pause you. A teachable moment, the awkward kind.", "zh": "你抢跑了，带教不得不叫停你。一个可以学习的瞬间——尴尬的那种。" }, "effects": { "handSkill": 2, "reputation": -4, "stress": 6 } }
+      ]
+    },
+    {
+      "id": "clin_anesthesia_nerves",
+      "title": { "en": "The Anesthesia Jitters", "zh": "打麻药的手抖" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["clinicalSense", "confidence"],
+      "minSemester": 7,
+      "weight": 10,
+      "condition": { "maxStats": { "confidence": 60 } },
+      "text": {
+        "en": "It's just an inferior alveolar block, which you've done on the manikin a hundred times. The needle suddenly feels like it weighs a kilogram.",
+        "zh": "不过是个下牙槽神经阻滞，你在仿真头模上做过一百遍了。这根针忽然重得像有一公斤。"
+      },
+      "choices": [
+        { "id": "visualize_landmarks", "text": { "en": "Pause, picture the landmarks, go", "zh": "停一秒，在脑里过一遍标志点，再下针" }, "resultText": { "en": "You find the coronoid notch, the angle's right, the patient feels almost nothing. Clean.", "zh": "你摸到喙突切迹，角度对了，病人几乎没感觉。漂亮。" }, "effects": { "clinicalSense": 5, "confidence": 6, "stress": -2 } },
+        { "id": "rush_the_stick", "text": { "en": "Just get it over with quickly", "zh": "赶紧扎完算了" }, "resultText": { "en": "Speed beats precision today; you reposition once. Numb in the end, nerves still buzzing.", "zh": "今天快赢了准，你重新调整了一次。最后是麻了，可你的神经还在嗡嗡。" }, "effects": { "handSkill": 1, "confidence": -2, "stress": 6 } },
+        { "id": "ask_faculty_watch", "text": { "en": "Ask faculty to watch this one", "zh": "请带教看着这一针" }, "resultText": { "en": "They confirm your angle before you advance. Your hand steadies the moment they nod.", "zh": "他们在你进针前确认了角度。他们一点头，你的手就稳了。" }, "effects": { "clinicalSense": 4, "confidence": 3, "stress": -1 } }
+      ]
+    },
+    {
+      "id": "clin_running_behind",
+      "title": { "en": "Running Behind", "zh": "进度落后了" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["clinic", "patient"],
+      "minSemester": 7,
+      "weight": 9,
+      "text": {
+        "en": "The case is taking longer than planned, your next patient is already in the waiting room, and the clinic clock has no sympathy whatsoever.",
+        "zh": "这个病例做得比计划久，下一位病人已经在候诊区了，而诊室的钟对你毫无同情心。"
+      },
+      "choices": [
+        { "id": "do_it_right", "text": { "en": "Finish this one properly", "zh": "先把这个好好做完" }, "resultText": { "en": "You don't cut corners. The next patient waits a bit, both end up well treated.", "zh": "你没偷工减料。下一位多等了一会儿，但两位最后都治得妥妥的。" }, "effects": { "clinicalSense": 5, "stress": 4, "reputation": 1 } },
+        { "id": "warn_next", "text": { "en": "Have the desk warn the next patient", "zh": "让前台提前知会下一位" }, "resultText": { "en": "A heads-up turns frustration into patience. Communication does what speed couldn't.", "zh": "一句提前知会把烦躁变成了耐心。沟通做到了速度做不到的事。" }, "effects": { "empathy": 4, "reputation": 3, "stress": -1 } },
+        { "id": "panic_speed", "text": { "en": "Panic-rush to claw back time", "zh": "慌慌张张抢时间" }, "resultText": { "en": "Hurrying makes you drop an instrument and restart a step. Time saved: negative.", "zh": "一急你掉了个器械，又得重做一步。省下的时间：负数。" }, "effects": { "handSkill": -2, "stress": 9, "mood": -3 } }
+      ]
+    },
+    {
+      "id": "clin_cost_conversation",
+      "title": { "en": "The Cost Conversation", "zh": "聊费用" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["patient", "empathy"],
+      "minSemester": 7,
+      "weight": 9,
+      "text": {
+        "en": "Your patient hears the estimate and goes quiet. You can see them doing the same math everyone does, the kind where the tooth competes with the grocery bill.",
+        "zh": "病人听到估价后沉默了。你看得出他们在做那道每个人都会做的算术——牙和买菜钱抢预算的那种。"
+      },
+      "choices": [
+        { "id": "lay_out_options", "text": { "en": "Walk through phased, cheaper options", "zh": "讲讲分期、更省钱的方案" }, "resultText": { "en": "You map a do-it-in-stages plan. Their shoulders drop; the tooth and the budget can coexist.", "zh": "你给他们排了个分阶段做的计划。他们松了口气，牙和预算可以共存了。" }, "effects": { "empathy": 6, "clinicalSense": 3, "reputation": 3 } },
+        { "id": "stay_quiet", "text": { "en": "Let the silence do the selling", "zh": "用沉默替你推方案" }, "resultText": { "en": "The awkward pause pushes them to agree, but they leave looking cornered, not cared for.", "zh": "尴尬的停顿逼他们点了头，可他们走时像被将了军，而不是被照顾。" }, "effects": { "money": 2, "empathy": -4, "reputation": -2 } },
+        { "id": "loop_in_admin", "text": { "en": "Loop in the financial coordinator", "zh": "叫上费用协调员一起看" }, "resultText": { "en": "The coordinator finds a plan you didn't know existed. Teamwork, and a relieved patient.", "zh": "协调员找到了一个你都不知道的方案。团队协作，外加一个松了口气的病人。" }, "effects": { "empathy": 4, "reputation": 2, "stress": -1 } }
+      ]
+    },
+    {
+      "id": "clin_language_barrier",
+      "title": { "en": "When Words Don't Quite Reach", "zh": "语言不太通的时候" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["patient", "empathy"],
+      "minSemester": 7,
+      "weight": 9,
+      "text": {
+        "en": "Your patient's English and your handful of their language are both running on fumes, but the worried look needs no translation.",
+        "zh": "病人的英语和你那点对方的语言都快见底了，但那副担忧的神情根本不需要翻译。"
+      },
+      "choices": [
+        { "id": "use_interpreter", "text": { "en": "Call the interpreter line, go slow", "zh": "接通翻译专线，慢慢来" }, "resultText": { "en": "The interpreter bridges everything. Consent is real consent now, and they visibly relax.", "zh": "翻译把一切都接通了。现在的知情同意是真的知情同意，他们肉眼可见地放松了。" }, "effects": { "empathy": 6, "clinicalSense": 3, "stress": 2 } },
+        { "id": "gestures_diagrams", "text": { "en": "Lean on diagrams and gestures", "zh": "靠画图和手势" }, "resultText": { "en": "You sketch the tooth and mime the steps. Imperfect, but the smile back says it landed.", "zh": "你画了牙，比划了步骤。不完美，但回过来的那个笑说明传达到了。" }, "effects": { "empathy": 4, "confidence": 2, "stress": 1 } },
+        { "id": "push_through", "text": { "en": "Push through with simple English", "zh": "用简单英语硬聊过去" }, "resultText": { "en": "You get the gist across but miss a worry they couldn't phrase. It surfaces awkwardly later.", "zh": "大意是传到了，可你漏掉了一个他们说不出口的担忧，后来别扭地冒了出来。" }, "effects": { "empathy": -2, "clinicalSense": -1, "stress": 4 } }
+      ]
+    },
+    {
+      "id": "clin_pediatric_patient",
+      "title": { "en": "A Very Small Patient", "zh": "一个很小的病人" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["patient", "empathy", "confidence"],
+      "minSemester": 7,
+      "weight": 9,
+      "text": {
+        "en": "A six-year-old sits in the big chair swinging their legs, deciding in real time whether you are a friend or the enemy of all teeth.",
+        "zh": "一个六岁小孩坐在大椅子上晃着腿，正实时判断你到底是朋友，还是全体牙齿的公敌。"
+      },
+      "choices": [
+        { "id": "make_it_a_game", "text": { "en": "Turn the exam into a game", "zh": "把检查变成游戏" }, "resultText": { "en": "You count teeth like treasure and let them hold the mirror. Giggles replace tears. Win.", "zh": "你像数宝藏一样数牙，还让他们拿镜子。咯咯笑取代了眼泪。赢了。" }, "effects": { "empathy": 6, "confidence": 4, "stress": -2 } },
+        { "id": "be_strictly_clinical", "text": { "en": "Stay strictly business to save time", "zh": "为省时间一切照流程走" }, "resultText": { "en": "Efficient, but the legs stop swinging and the trust along with them. Slower would've been faster.", "zh": "是高效，可晃动的腿停了，信任也跟着停了。慢一点反而会更快。" }, "effects": { "handSkill": 1, "empathy": -3, "stress": 4 } },
+        { "id": "involve_parent", "text": { "en": "Coach the parent to help", "zh": "教家长一起配合" }, "resultText": { "en": "You give the parent a job and the kid a hand to hold. The room calms by half.", "zh": "你给家长派了任务，给孩子留了只手牵着。整个房间的紧张少了一半。" }, "effects": { "empathy": 5, "clinicalSense": 2, "stress": -1 } }
+      ]
+    },
+    {
+      "id": "clin_complex_case",
+      "title": { "en": "The Complicated One", "zh": "复杂病例" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["clinicalSense", "clinic"],
+      "minSemester": 7,
+      "weight": 10,
+      "text": {
+        "en": "Multiple issues, a thick medical history, and a patient who's seen four other clinics. This is the case your textbook called \"beyond the scope of this chapter.\"",
+        "zh": "好几个问题，厚厚的病史，还有一个跑过四家诊所的病人。这就是你课本里写着“超出本章范围”的那种病例。"
+      },
+      "choices": [
+        { "id": "break_it_down", "text": { "en": "Break it into a phased plan", "zh": "拆成分阶段的计划" }, "resultText": { "en": "You sequence it step by patient step. Suddenly the impossible just looks like a long list.", "zh": "你一步一步给它排了序。忽然之间，不可能只是一张长清单而已。" }, "effects": { "clinicalSense": 6, "knowledge": 4, "stress": 2 } },
+        { "id": "refer_out", "text": { "en": "Refer the hardest part to a specialist", "zh": "把最难的部分转给专科" }, "resultText": { "en": "Knowing your limit is a skill too. The patient gets better care; your log loses a flashy entry.", "zh": "知道自己的边界也是一种本事。病人得到更好的照顾，你的病例本少了个亮眼条目。" }, "effects": { "clinicalSense": 4, "empathy": 3, "reputation": 2 } },
+        { "id": "tackle_alone", "text": { "en": "Take the whole thing on yourself", "zh": "整个全包下来自己做" }, "resultText": { "en": "Ambitious. You learn a ton and lose a weekend of sleep to anxious chart-reading.", "zh": "很有志气。你学到一大堆，也搭进一个周末的睡眠去焦虑地翻病历。" }, "effects": { "knowledge": 6, "handSkill": 3, "stress": 10, "stamina": -4 } }
+      ]
+    },
+    {
+      "id": "clin_small_complication",
+      "title": { "en": "A Small Surprise Mid-Procedure", "zh": "操作中的小意外" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["clinicalSense", "confidence"],
+      "minSemester": 7,
+      "weight": 10,
+      "text": {
+        "en": "Something unexpected shows up partway through, nothing dangerous, just not in the lesson plan. The patient is watching your eyes for a reaction.",
+        "zh": "做到一半冒出个没料到的情况，不危险，只是不在教案里。病人正盯着你的眼睛找反应。"
+      },
+      "choices": [
+        { "id": "stay_calm", "text": { "en": "Keep a calm face, reassess", "zh": "面不改色，重新评估" }, "resultText": { "en": "You keep your voice level, step back, and adjust. The tooth can wait; your composure can't.", "zh": "你声音平稳，退一步，调整方案。牙可以等，你的镇定不能丢。" }, "effects": { "clinicalSense": 6, "confidence": 5, "stress": 2 } },
+        { "id": "visible_panic", "text": { "en": "Let the worry show on your face", "zh": "把慌张写在脸上" }, "resultText": { "en": "Your face does the talking and the patient tenses up. You fix it, but the room got harder first.", "zh": "你的表情先开了口，病人也跟着紧张。你最后解决了，但房间先变难了。" }, "effects": { "clinicalSense": 2, "empathy": -2, "stress": 7 } },
+        { "id": "call_for_help", "text": { "en": "Calmly call faculty over", "zh": "镇定地请带教过来" }, "resultText": { "en": "\"Could you take a look?\" handled smoothly. Faculty confirms your read; everyone exhales.", "zh": "“能过来看一眼吗？”处理得很从容。带教确认了你的判断，大家都松了口气。" }, "effects": { "clinicalSense": 4, "confidence": 3, "stress": -1 } }
+      ]
+    },
+    {
+      "id": "clin_chart_notes",
+      "title": { "en": "The Chart Notes at 6pm", "zh": "晚上六点的病历" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["clinic", "clinicalSense"],
+      "minSemester": 7,
+      "weight": 8,
+      "text": {
+        "en": "Patients are gone, the clinic's emptying, and your charting backlog sits there like a browser with eighty tabs open. Future-you is begging present-you to write it down right.",
+        "zh": "病人都走了，诊室在清场，你那堆没写完的病历像开了八十个标签页的浏览器一样杵着。未来的你正求现在的你把它好好写清楚。"
+      },
+      "choices": [
+        { "id": "chart_thoroughly", "text": { "en": "Chart thoroughly now while it's fresh", "zh": "趁记忆新鲜，现在就认真写" }, "resultText": { "en": "You write clean, complete notes. Tired tonight, blessed at next week's recall appointment.", "zh": "你写下干净完整的记录。今晚累，但下周复诊时你会感谢自己。" }, "effects": { "clinicalSense": 5, "reputation": 2, "stamina": -3 } },
+        { "id": "bare_minimum", "text": { "en": "Jot the bare minimum and go home", "zh": "随便记几笔就回家" }, "resultText": { "en": "You're out the door fast. Next visit you stare at \"tx done, pt ok\" and have no idea.", "zh": "你飞快地出了门。下次复诊看着“做了治疗，病人ok”，一脸茫然。" }, "effects": { "stress": -2, "clinicalSense": -3, "mood": 1 } },
+        { "id": "ask_assistant_help", "text": { "en": "Co-write with the assistant, split it", "zh": "和助手分工一起写" }, "resultText": { "en": "Two sets of memory beat one. You finish faster and catch a detail you'd have missed.", "zh": "两个人的记忆胜过一个。你写得更快，还补上了一个本会漏掉的细节。" }, "effects": { "clinicalSense": 3, "reputation": 2, "stamina": -1 } }
+      ]
+    },
+    {
+      "id": "clin_working_with_assistant",
+      "title": { "en": "Four Hands, One Plan", "zh": "四只手，一个计划" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["clinic", "confidence"],
+      "minSemester": 7,
+      "weight": 9,
+      "text": {
+        "en": "Today you've got a dental assistant who's done this longer than you've been in dental school. Four-handed dentistry only works if you actually let the other two hands help.",
+        "zh": "今天给你配了个助手，干这行的年头比你上牙学院还久。四手操作只有在你真的肯让另外两只手帮忙时才奏效。"
+      },
+      "choices": [
+        { "id": "communicate_clearly", "text": { "en": "Set a clear rhythm together", "zh": "一起定个清晰的节奏" }, "resultText": { "en": "You call instruments by name and they're in your palm before you finish the word. Smooth.", "zh": "你叫器械名，话还没说完器械就到了你手心。行云流水。" }, "effects": { "handSkill": 4, "confidence": 4, "stress": -3 } },
+        { "id": "do_everything_solo", "text": { "en": "Just do everything yourself", "zh": "干脆全自己来" }, "resultText": { "en": "You reach for your own everything and the assistant stands idle. Slower, lonelier, your call.", "zh": "你什么都自己伸手去拿，助手在旁边闲着。更慢，更孤单，是你的选择。" }, "effects": { "handSkill": 1, "stress": 5, "reputation": -1 } },
+        { "id": "ask_their_tips", "text": { "en": "Ask the assistant for their tips", "zh": "向助手请教窍门" }, "resultText": { "en": "They show you a retraction trick worth three lectures. Humility pays interest.", "zh": "他们教你一个抵得上三节课的牵拉小技巧。谦虚是有利息的。" }, "effects": { "handSkill": 5, "knowledge": 3, "confidence": 2 } }
+      ]
+    },
+    {
+      "id": "clin_patient_gratitude",
+      "title": { "en": "\"Thank You, Doctor\"", "zh": "“谢谢你，医生”" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["patient", "empathy", "confidence"],
+      "minSemester": 7,
+      "weight": 8,
+      "text": {
+        "en": "Your patient pauses at the door, turns, and says they haven't smiled in a photo for years and now they will. They call you doctor. You are very much still a student.",
+        "zh": "病人在门口停下，回过头，说他们好多年没在照片里笑过了，现在终于能笑了。他们叫你医生。而你其实还是个学生。"
+      },
+      "choices": [
+        { "id": "let_it_land", "text": { "en": "Let yourself feel it", "zh": "让自己好好感受这一刻" }, "resultText": { "en": "You let the moment in instead of deflecting. This is why the eighty tabs are worth it.", "zh": "你没有岔开话题，而是让这一刻进了心里。这就是那八十个标签页值得的原因。" }, "effects": { "confidence": 6, "mood": 6, "stress": -4 } },
+        { "id": "deflect_modestly", "text": { "en": "Deflect: \"It was nothing\"", "zh": "谦虚带过：“没什么啦”" }, "resultText": { "en": "You wave it off out of habit. They look slightly deflated; the gratitude needed a landing pad.", "zh": "你习惯性地摆摆手。他们神色微微一沉，那份感激本需要一个落脚的地方。" }, "effects": { "confidence": 1, "empathy": -2, "mood": 1 } },
+        { "id": "credit_the_team", "text": { "en": "Share the credit with the team", "zh": "把功劳分给团队" }, "resultText": { "en": "\"My faculty and assistant earned this too.\" Warm, true, and the whole pod stands taller.", "zh": "“我的带教和助手也有功劳。”温暖、真诚，整个小组都挺直了腰。" }, "effects": { "empathy": 4, "reputation": 3, "mood": 3 } }
+      ]
+    },
+    {
+      "id": "clin_thoroughness_vs_time",
+      "title": { "en": "Good Enough vs. Right", "zh": "差不多 还是 做对" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["clinicalSense", "clinic"],
+      "minSemester": 7,
+      "weight": 9,
+      "text": {
+        "en": "It looks fine. It would pass. But that one margin is nagging at you, and the clock is nagging right back.",
+        "zh": "看着挺好，能过关。可那一处边缘一直在你心里嘀咕，而钟也在那边回嘀咕。"
+      },
+      "choices": [
+        { "id": "redo_the_margin", "text": { "en": "Redo the margin until it's right", "zh": "重做那处边缘，直到做对" }, "resultText": { "en": "Extra fifteen minutes, but it's genuinely good now. Your standards just set a little harder.", "zh": "多花了十五分钟，但现在是真的好。你的标准刚刚又硬了一点。" }, "effects": { "handSkill": 5, "clinicalSense": 4, "stamina": -2 } },
+        { "id": "let_it_pass", "text": { "en": "Let it pass and move on", "zh": "就这样，过了往下走" }, "resultText": { "en": "It checks off. But the nagging follows you home and sits on the end of the bed.", "zh": "确实过了。可那点嘀咕跟你回了家，坐在床尾。" }, "effects": { "stress": 4, "clinicalSense": -2, "confidence": -1 } },
+        { "id": "ask_faculty_eval", "text": { "en": "Ask faculty if it truly needs redoing", "zh": "问带教这处到底要不要重做" }, "resultText": { "en": "They show you the threshold that actually matters. Now you'll know on your own next time.", "zh": "他们给你指了真正要紧的那条线。下次你自己就能判断了。" }, "effects": { "knowledge": 5, "clinicalSense": 3, "stress": -1 } }
+      ]
+    },
+    {
+      "id": "clin_small_mistake",
+      "title": { "en": "A Small Mistake, Calmly Caught", "zh": "一个小失误，从容补回" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["clinicalSense", "confidence"],
+      "minSemester": 7,
+      "weight": 10,
+      "condition": { "maxStats": { "confidence": 65 } },
+      "text": {
+        "en": "You realize you've reached for the wrong shade, caught before it mattered but after your stomach already dropped. Nobody's hurt; your pride is just slightly bruised.",
+        "zh": "你发现自己拿错了比色，在出问题前就察觉了，可你的胃已经先沉了一下。没人受伤，受伤的只是你那点自尊。"
+      },
+      "choices": [
+        { "id": "own_it_fix_it", "text": { "en": "Own it out loud and correct it", "zh": "大方承认，当场纠正" }, "resultText": { "en": "\"Let me grab the right one.\" Honest and unbothered. The patient trusts you more, not less.", "zh": "“我去换正确的那个。”坦荡、不慌。病人反而更信你了，而不是更不信。" }, "effects": { "clinicalSense": 5, "confidence": 4, "reputation": 2 } },
+        { "id": "hide_it", "text": { "en": "Quietly swap it, mention nothing", "zh": "悄悄换掉，什么都不说" }, "resultText": { "en": "You fix it silently. No harm done, but the habit of hiding small things is a slippery one.", "zh": "你默默改好了。没造成伤害，但藏小事这个习惯，是会打滑的。" }, "effects": { "handSkill": 1, "clinicalSense": -2, "stress": 3 } },
+        { "id": "tell_faculty", "text": { "en": "Flag it to faculty as a learning point", "zh": "当作学习点报给带教" }, "resultText": { "en": "Faculty respects the honesty and shares a trick to never mix shades up again. Net gain.", "zh": "带教欣赏这份坦诚，还教了你一招再也不弄混比色的方法。净赚。" }, "effects": { "knowledge": 4, "clinicalSense": 3, "reputation": 1 } }
+      ]
+    },
+    {
+      "id": "clin_quota_pressure",
+      "title": { "en": "The Requirement Count", "zh": "指标的压力" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["clinic", "clinicalSense"],
+      "minSemester": 7,
+      "weight": 10,
+      "condition": { "maxStats": { "stress": 50 } },
+      "text": {
+        "en": "Graduation requirements need a certain number of each procedure, and yours are uneven. There's a quiet temptation to see patients as boxes to tick. The tooth can wait; your conscience cannot.",
+        "zh": "毕业要求每种术式都得攒够数，而你的进度参差不齐。有一股悄悄的诱惑想把病人看成待打钩的格子。牙可以等，你的良心不能。"
+      },
+      "choices": [
+        { "id": "patient_over_quota", "text": { "en": "Treat the patient, not the checkbox", "zh": "治病人，不是治那个格子" }, "resultText": { "en": "You do what they need, not what your tally wants. The numbers catch up; your integrity never wobbles.", "zh": "你做的是他们需要的，不是你计数表想要的。数字后来补上了，你的良心一直没晃。" }, "effects": { "clinicalSense": 5, "empathy": 5, "stress": 3 } },
+        { "id": "chase_the_count", "text": { "en": "Steer toward what fills your quota", "zh": "往能凑指标的方向引导" }, "resultText": { "en": "Your tally improves; something in your gut doesn't. You pass, with an asterisk only you can see.", "zh": "你的计数好看了，胃里却有点不对劲。你过关了，带着一个只有你看得见的星号。" }, "effects": { "handSkill": 2, "empathy": -4, "stress": 5 } },
+        { "id": "talk_to_coordinator", "text": { "en": "Ask the clinic coordinator for cases", "zh": "找诊室协调员帮你匹配病例" }, "resultText": { "en": "They flag suitable patients who genuinely need those procedures. Quota and care, aligned.", "zh": "他们帮你留意真正需要那些术式的合适病例。指标和关怀，对上了。" }, "effects": { "clinicalSense": 4, "reputation": 2, "stress": -2 } }
+      ]
+    },
+    {
+      "id": "clin_returning_patient",
+      "title": { "en": "The One Who Came Back for You", "zh": "专程回来找你的病人" },
+      "stage": ["clinical", "advanced"],
+      "tags": ["patient", "empathy", "confidence"],
+      "minSemester": 7,
+      "weight": 9,
+      "text": {
+        "en": "A patient from last semester requested you by name for their recall. They drove past two closer clinics because, they say, you actually listened. No pressure or anything.",
+        "zh": "上学期的一位病人复诊时点名要你。他们说，自己开车路过了两家更近的诊所，就因为你是真的在听。一点压力都没有，真的。"
+      },
+      "choices": [
+        { "id": "rise_to_trust", "text": { "en": "Meet the trust, take your time", "zh": "不辜负这份信任，慢慢来" }, "resultText": { "en": "You give them the careful visit they came back for. Being someone's chosen dentist feels like a milestone.", "zh": "你给了他们专程回来求的那种细致诊疗。成为某人指定的牙医，像一个里程碑。" }, "effects": { "confidence": 6, "empathy": 5, "mood": 4 } },
+        { "id": "freeze_under_pressure", "text": { "en": "Tense up under the expectation", "zh": "在期待下绷紧了" }, "resultText": { "en": "You overthink every move trying to be perfect. Still good care, just a stressful way to give it.", "zh": "你为了完美把每个动作都想过头了。诊疗还是不错，只是把过程做得很紧张。" }, "effects": { "handSkill": 2, "stress": 7, "confidence": -1 } },
+        { "id": "be_honest_growth", "text": { "en": "Admit you've grown since last time", "zh": "坦白自己比上次更进步了" }, "resultText": { "en": "\"I've learned a lot since I saw you.\" They love that. Honesty deepens an already-warm rapport.", "zh": "“上次见你之后我学了好多。”他们很受用。坦诚让本就温暖的关系更深了。" }, "effects": { "empathy": 4, "confidence": 3, "reputation": 2 } }
+      ]
+    }
+  ]
+}

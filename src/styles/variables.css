@@ -1,0 +1,40 @@
+:root {
+  /* Palette — cozy, warm, soft scarlet accent */
+  --bg: #faf7f2;
+  --bg-tint: #f3ece2;
+  --panel: #ffffff;
+  --panel-2: #fcfaf6;
+  --text: #2d2d2d;
+  --text-soft: #51504d;
+  --muted: #8a847b;
+  --primary: #bb3a3a;
+  --primary-strong: #a33030;
+  --primary-soft: #f4dddd;
+  --accent: #3f7d8a;
+  --accent-soft: #e1eef0;
+  --good: #4f8a5f;
+  --good-soft: #e3f1e6;
+  --warning: #c88a2d;
+  --warning-soft: #f7ecd6;
+  --danger: #b44444;
+  --danger-soft: #f6e0e0;
+  --border: #e8ded4;
+  --border-strong: #d9cdbe;
+  --shadow: 0 8px 24px rgba(60, 40, 20, 0.08);
+  --shadow-sm: 0 2px 8px rgba(60, 40, 20, 0.06);
+  --shadow-lg: 0 16px 40px rgba(60, 40, 20, 0.14);
+
+  /* Rarity */
+  --rare: #3f7d8a;
+  --epic: #8a5cb0;
+
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-pill: 999px;
+
+  --space: 16px;
+  --maxw: 1180px;
+
+  --font: "Inter", "Segoe UI", system-ui, -apple-system, "PingFang SC",
+    "Microsoft YaHei", "Hiragino Sans GB", "Noto Sans SC", sans-serif;
+}

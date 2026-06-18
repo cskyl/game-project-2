@@ -1,0 +1,135 @@
+{
+  "events": [
+    {
+      "id": "fun_actually_good_coffee",
+      "title": { "en": "Suspiciously Good Coffee", "zh": "好喝得离谱的咖啡" },
+      "stage": ["any"],
+      "tags": ["funny", "random"],
+      "weight": 10,
+      "text": { "en": "The new cart outside the library is selling a latte that smells like it was made by someone who actually cares. There's a line, but it moves fast.", "zh": "图书馆门口新来的咖啡车，那杯拿铁闻起来像是有人真的用心做的。排队的人不少，但队伍走得很快。" },
+      "choices": [
+        { "id": "buy_the_good_one", "text": { "en": "Buy the fancy latte", "zh": "买那杯精致拿铁" }, "resultText": { "en": "Worth every cent. You float through the next two lectures.", "zh": "每一分钱都值。接下来两节 lecture 你都飘着上的。" }, "effects": { "mood": 6, "stamina": 4, "money": -5 } },
+        { "id": "drip_coffee", "text": { "en": "Get the cheap drip instead", "zh": "改买便宜的美式" }, "resultText": { "en": "Fine. Caffeinated. The dream of the good latte lingers.", "zh": "还行，咖啡因到位了。但那杯好拿铁的梦还在心里晃。" }, "effects": { "stamina": 3, "money": -1, "mood": 1 } },
+        { "id": "skip_line", "text": { "en": "Skip it, you're already late", "zh": "算了，你已经迟到了" }, "resultText": { "en": "You make it to class on time, smelling everyone else's coffee with great sadness.", "zh": "你准时进了教室，闻着同学们的咖啡，心里有点酸。" }, "effects": { "stress": -2, "mood": -1 } }
+      ]
+    },
+    {
+      "id": "fun_vending_machine_thief",
+      "title": { "en": "The Vending Machine Has Tasted Money", "zh": "贩卖机尝过钱的味道了" },
+      "stage": ["any"],
+      "tags": ["funny", "random"],
+      "weight": 9,
+      "text": { "en": "You insert your last bill, press B4 for the granola bar, and the spiral turns... 95% of the way. The bar dangles, taunting you.", "zh": "你塞进最后一张钱，按 B4 想买能量棒，螺旋转了……95%。能量棒就那么吊着，嘲笑你。" },
+      "choices": [
+        { "id": "buy_again", "text": { "en": "Feed it another bill to knock both down", "zh": "再塞一张，把两根都顶下来" }, "resultText": { "en": "Two bars drop. You are now rich in granola, poor in cash. Worth it.", "zh": "两根都掉下来了。你现在能量棒首富，现金赤贫。值了。" }, "effects": { "stamina": 4, "money": -3, "mood": 3 } },
+        { "id": "gentle_shake", "text": { "en": "Gently rock the machine", "zh": "轻轻摇一摇机器" }, "resultText": { "en": "It surrenders the bar without crushing you. A small, dignified victory.", "zh": "机器投降了，能量棒掉下来还没砸到你。一场体面的小胜利。" }, "effects": { "mood": 4, "stamina": 2 } },
+        { "id": "walk_away", "text": { "en": "Accept the loss and walk away", "zh": "认栽走人" }, "resultText": { "en": "A stranger later frees your bar and eats it. The circle of vending life.", "zh": "后来有个陌生人把你的能量棒解救出来吃了。贩卖机生态的循环。" }, "effects": { "money": -2, "stress": 2, "mood": -1 } }
+      ]
+    },
+    {
+      "id": "fun_lost_id_badge",
+      "title": { "en": "Badge Not Found", "zh": "门卡失踪记" },
+      "stage": ["any"],
+      "tags": ["funny", "random"],
+      "weight": 10,
+      "text": { "en": "Your ID badge has vanished. You stand at the locked clinic door doing the full-body pocket pat that everyone recognizes and no one respects.", "zh": "你的门卡不见了。你站在锁着的 clinic 门口，做着大家都认得、却没人尊重的全身摸口袋动作。" },
+      "choices": [
+        { "id": "retrace_steps", "text": { "en": "Retrace your morning", "zh": "回想一早上的路线" }, "resultText": { "en": "It was in the sim lab, clipped to a typodont. Mystery solved, dignity intact.", "zh": "原来卡在 sim lab，夹在仿真头模上。谜底揭开，尊严尚存。" }, "effects": { "stress": -2, "mood": 3, "stamina": -1 } },
+        { "id": "tailgate_in", "text": { "en": "Politely follow someone in", "zh": "礼貌地跟着别人进去" }, "resultText": { "en": "You get in, but spend the day badgeless and nervous about every door.", "zh": "你进去了，但一整天没卡，对每扇门都心虚。" }, "effects": { "stress": 3, "mood": -1 } },
+        { "id": "get_temp_badge", "text": { "en": "Go get a temporary badge", "zh": "去办一张临时卡" }, "resultText": { "en": "The front desk gives you a hilariously bad photo on a temp pass. You keep it forever.", "zh": "前台给你办了张临时卡，照片丑得离谱。你决定永久收藏它。" }, "effects": { "mood": 2, "stamina": -2, "stress": 1 } }
+      ]
+    },
+    {
+      "id": "fun_glove_fashion",
+      "title": { "en": "Glove Couture", "zh": "手套高定时装" },
+      "stage": ["any"],
+      "tags": ["funny", "random"],
+      "weight": 8,
+      "text": { "en": "The supply room is out of your usual gloves. The only size left makes your hands look like cartoon balloons, and your classmates have noticed.", "zh": "库房没有你常用的手套了。只剩下的尺码让你的手看起来像卡通气球，同学们已经注意到了。" },
+      "choices": [
+        { "id": "own_the_look", "text": { "en": "Own it, strut the hallway", "zh": "豁出去，走廊上走个秀" }, "resultText": { "en": "You commit so hard it becomes a vibe. Two people ask where to get the look.", "zh": "你演得太投入，反而成了一种 vibe。两个人还来问你这造型哪买的。" }, "effects": { "mood": 5, "confidence": 3, "reputation": 1 } },
+        { "id": "hunt_other_room", "text": { "en": "Hunt down better gloves", "zh": "去别的房间找合适的手套" }, "resultText": { "en": "You find your size two floors up, slightly winded but properly dressed.", "zh": "你在楼上两层找到了对的尺码，喘着气但穿戴整齐。" }, "effects": { "stamina": -3, "stress": -1, "mood": 1 } },
+        { "id": "just_wear_them", "text": { "en": "Just wear the balloon gloves", "zh": "就戴气球手套了" }, "resultText": { "en": "Your fine motor work suffers a little, but the lab gets a good laugh.", "zh": "你的精细操作受了点影响，但实验室笑得很开心。" }, "effects": { "handSkill": -2, "mood": 2 } }
+      ]
+    },
+    {
+      "id": "fun_group_chat_chaos",
+      "title": { "en": "147 Unread Messages", "zh": "147 条未读" },
+      "stage": ["any"],
+      "tags": ["funny", "random"],
+      "weight": 11,
+      "text": { "en": "You glance at your phone after one lecture. The class group chat has 147 unread, started by 'is the quiz today??' and devolved into meme warfare.", "zh": "一节 lecture 后你瞥了眼手机。班级群 147 条未读，起因是一句\"今天有小测吗？？\"，最后演变成表情包大战。" },
+      "choices": [
+        { "id": "read_all", "text": { "en": "Scroll the whole saga", "zh": "把整段史诗刷完" }, "resultText": { "en": "Twenty minutes gone, but you laughed and learned the quiz is next week. Net positive.", "zh": "二十分钟没了，但你笑了，还知道小测是下周。算正收益。" }, "effects": { "mood": 4, "stamina": -2, "stress": -1 } },
+        { "id": "just_answer", "text": { "en": "Answer the actual question and mute", "zh": "回答正事然后免打扰" }, "resultText": { "en": "You drop the answer, mute the chat, and feel suspiciously mature.", "zh": "你扔下答案，把群设了免打扰，感觉自己成熟得有点可疑。" }, "effects": { "stress": -3, "knowledge": 1, "mood": 1 } },
+        { "id": "post_meme", "text": { "en": "Add one perfect meme", "zh": "贴一张完美表情包" }, "resultText": { "en": "Your meme gets eleven reactions. You contributed nothing useful and everything emotionally.", "zh": "你的表情包收获十一个回应。实用价值为零，情绪价值拉满。" }, "effects": { "mood": 5, "reputation": 2, "stamina": -1 } },
+        { "id": "ignore_it", "text": { "en": "Ignore it entirely", "zh": "完全无视" }, "resultText": { "en": "You stay focused and miss the funniest day in chat history. A worthy trade.", "zh": "你保持了专注，错过了群聊史上最好笑的一天。值得的取舍。" }, "effects": { "knowledge": 2, "mood": -1, "stress": -1 } }
+      ]
+    },
+    {
+      "id": "fun_tooth_meme",
+      "title": { "en": "A Tooth Meme For The Ages", "zh": "传世级牙齿表情包" },
+      "stage": ["any"],
+      "tags": ["funny", "random"],
+      "weight": 9,
+      "text": { "en": "Mid-study, inspiration strikes: a meme so perfectly capturing the pain of memorizing every cusp and groove. Your thumb hovers over 'post'.", "zh": "复习到一半，灵感降临：一张表情包，完美概括了背下每个牙尖牙沟的痛苦。你的拇指悬在\"发布\"上。" },
+      "choices": [
+        { "id": "post_to_class", "text": { "en": "Post it to the class", "zh": "发到班群" }, "resultText": { "en": "Instant legend. People quote it for weeks. You are now The Meme Person.", "zh": "瞬间封神，大家引用了好几周。你现在是\"那个表情包大佬\"。" }, "effects": { "mood": 5, "reputation": 3, "stamina": -1 } },
+        { "id": "show_partner", "text": { "en": "Just send it to {partner}", "zh": "只发给 {partner}" }, "resultText": { "en": "{partner} replies with three crying-laughing faces and 'frame this'. Cozy little win.", "zh": "{partner} 回了三个笑哭，外加一句\"这个得裱起来\"。温馨的小确幸。" }, "effects": { "mood": 5, "love": 3 } },
+        { "id": "back_to_study", "text": { "en": "Save it, get back to studying", "zh": "存着，回去复习" }, "resultText": { "en": "Discipline! You actually learn the cusps. The meme waits patiently in drafts.", "zh": "自律！你真把牙尖背下来了。表情包在草稿箱里乖乖等着。" }, "effects": { "knowledge": 4, "mood": 1, "stress": 1 } }
+      ]
+    },
+    {
+      "id": "fun_mystery_fridge_food",
+      "title": { "en": "Fridge Archaeology", "zh": "冰箱考古学" },
+      "stage": ["any"],
+      "tags": ["funny", "random"],
+      "weight": 8,
+      "text": { "en": "The shared fridge contains a container labeled only 'DO NOT' — the rest of the tape has fallen off. It has been there, by your estimate, since the dawn of time.", "zh": "公用冰箱里有个盒子，标签只剩\"请勿\"两个字——剩下的胶带掉了。据你估计，它从盘古开天就在那儿了。" },
+      "choices": [
+        { "id": "investigate", "text": { "en": "Bravely investigate", "zh": "勇敢地一探究竟" }, "resultText": { "en": "It's just very old rice. You toss it and become a quiet hero of the breakroom.", "zh": "其实只是放很久的米饭。你扔了它，成了休息室里无名的英雄。" }, "effects": { "reputation": 2, "mood": 2, "stress": 1 } },
+        { "id": "leave_it", "text": { "en": "Respect the 'DO NOT'", "zh": "尊重那句\"请勿\"" }, "resultText": { "en": "You make your own lunch space elsewhere. The container lives to haunt another day.", "zh": "你在别处给午饭找了块地。那个盒子又活过了一天，继续作祟。" }, "effects": { "stress": -1, "mood": 1 } },
+        { "id": "label_it", "text": { "en": "Add a passive-aggressive sticky note", "zh": "贴张阴阳怪气的便利贴" }, "resultText": { "en": "Your note sparks a three-day comment war on the fridge. Riveting drama, zero calories.", "zh": "你的便利贴在冰箱上引发了三天的留言大战。精彩绝伦，零卡路里。" }, "effects": { "mood": 3, "stress": -1 } }
+      ]
+    },
+    {
+      "id": "fun_autocorrect_disaster",
+      "title": { "en": "Autocorrect Has Betrayed You", "zh": "自动纠错背刺了你" },
+      "stage": ["any"],
+      "tags": ["funny", "random"],
+      "weight": 10,
+      "text": { "en": "You meant to text 'running late, sorry!' to your study partner. Autocorrect sent 'running latte, sorry!' Now everyone in the group thinks coffee is on the way.", "zh": "你本想给学习搭子发\"快迟到了，抱歉！\"。自动纠错发成了\"快奶茶了，抱歉！\"现在全组都以为有奶茶来了。" },
+      "choices": [
+        { "id": "lean_in", "text": { "en": "Actually bring lattes", "zh": "干脆真带奶茶来" }, "resultText": { "en": "You arrive with a drink tray and instantly become the group's favorite person.", "zh": "你端着饮料托盘出现，当场成了全组最受欢迎的人。" }, "effects": { "reputation": 3, "mood": 4, "money": -6 } },
+        { "id": "explain", "text": { "en": "Explain the typo", "zh": "解释这个错字" }, "resultText": { "en": "Mild disappointment all around, but it becomes a running joke for a month.", "zh": "大家轻微失望，但这事成了一个月的梗。" }, "effects": { "mood": 2, "stress": -1 } },
+        { "id": "ignore", "text": { "en": "Say nothing and hope", "zh": "啥也不说，听天由命" }, "resultText": { "en": "Three people show up expecting drinks. You learn to proofread the hard way.", "zh": "三个人空手赴约，满心期待。你用惨痛的方式学会了检查文字。" }, "effects": { "stress": 3, "mood": -1, "reputation": -1 } }
+      ]
+    },
+    {
+      "id": "fun_parking_saga",
+      "title": { "en": "The Parking Saga", "zh": "停车史诗" },
+      "stage": ["any"],
+      "tags": ["funny", "random"],
+      "weight": 9,
+      "text": { "en": "The lot is full. You've circled four times. A spot opens, you signal, and a tiny hatchback materializes from another dimension to take it.", "zh": "停车场满了。你已经绕了四圈。一个车位空出来，你打了灯，结果一辆小两厢从异次元冒出来抢走了。" },
+      "choices": [
+        { "id": "far_lot", "text": { "en": "Park in the far lot and walk", "zh": "停远场然后走过去" }, "resultText": { "en": "A brisk walk later, you arrive early, calm, and weirdly proud of your step count.", "zh": "快走一段后，你早到了，心情平静，还莫名为步数感到骄傲。" }, "effects": { "stamina": -2, "stress": -2, "mood": 2 } },
+        { "id": "pay_garage", "text": { "en": "Pay for the garage", "zh": "花钱进车库" }, "resultText": { "en": "Money spent, sanity saved. The covered spot feels like luxury.", "zh": "花了钱，保住了理智。有顶的车位感觉像奢侈品。" }, "effects": { "money": -4, "stress": -1, "mood": 1 } },
+        { "id": "keep_circling", "text": { "en": "Keep circling on principle", "zh": "本着原则继续绕" }, "resultText": { "en": "Twenty minutes later you win a spot through sheer spite. Late, but victorious.", "zh": "二十分钟后你纯靠一口气抢到了车位。迟到了，但赢了。" }, "effects": { "stress": 3, "mood": 1, "stamina": -1 } }
+      ]
+    },
+    {
+      "id": "fun_found_five_dollars",
+      "title": { "en": "Found Five Dollars", "zh": "捡到五块钱" },
+      "stage": ["any"],
+      "tags": ["funny", "random"],
+      "weight": 8,
+      "text": { "en": "Reaching into your white coat pocket for a pen, you find a folded five-dollar bill you have no memory of. Past-you left a gift.", "zh": "你伸手到白大褂口袋里摸笔，摸出一张折好的五块钱，完全不记得是怎么来的。过去的你留了份礼物。" },
+      "choices": [
+        { "id": "treat_yourself", "text": { "en": "Treat yourself to a snack", "zh": "给自己买点零食" }, "resultText": { "en": "Free-feeling snack money tastes the best. You thank past-you sincerely.", "zh": "意外之财买的零食最香。你真心感谢了过去的自己。" }, "effects": { "mood": 4, "stamina": 3, "money": -3 } },
+        { "id": "treat_partner", "text": { "en": "Save it to surprise {partner}", "zh": "留着给 {partner} 个惊喜" }, "resultText": { "en": "You grab {partner} a little something. The look on their face was worth far more than five.", "zh": "你给 {partner} 带了点小东西。对方的表情远比五块钱值钱。" }, "effects": { "mood": 3, "love": 4, "money": -4 } },
+        { "id": "save_it", "text": { "en": "Just keep it", "zh": "就先留着" }, "resultText": { "en": "You pocket it again for future-you. The cycle of fiver continues.", "zh": "你又把它塞回口袋，留给未来的自己。五块钱的循环继续。" }, "effects": { "mood": 2, "money": 1 } }
+      ]
+    }
+  ]
+}

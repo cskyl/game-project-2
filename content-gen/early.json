@@ -1,0 +1,234 @@
+{
+  "events": [
+    {
+      "id": "early_first_week_overload",
+      "title": { "en": "Eighty Tabs and a Dream", "zh": "八十个标签页和一个梦想" },
+      "stage": ["early"],
+      "tags": ["study", "stress"],
+      "minSemester": 1,
+      "maxSemester": 2,
+      "weight": 11,
+      "condition": { "maxStats": { "mood": 55 } },
+      "text": { "en": "It's day three and your brain already feels like a browser with eighty tabs open, two of them playing audio you can't find. Orientation packets, syllabi, locker combos, and a map that lies about where Room 114 is.", "zh": "开学第三天，你的大脑已经像开了八十个标签页的浏览器，其中两个还在放找不到来源的声音。迎新材料、syllabus、储物柜密码，还有一张关于 114 教室在哪里全在撒谎的地图。" },
+      "choices": [
+        { "id": "make_a_system", "text": { "en": "Build one tidy folder system tonight", "zh": "今晚搭一个干净的文件夹系统" }, "resultText": { "en": "You spend the evening sorting everything into neat folders. It eats your free time, but tomorrow-you nearly cries with gratitude.", "zh": "你花了一晚上把所有东西归类整理好。虽然搭进去了休息时间，但明天的你差点感动到哭。" }, "effects": { "knowledge": 4, "confidence": 5, "stress": -3, "stamina": -4 } },
+        { "id": "wing_it", "text": { "en": "Close the tabs and just go to sleep", "zh": "关掉标签页，先去睡觉" }, "resultText": { "en": "You decide the tooth can wait and your nervous system cannot. You wake up foggy on logistics but genuinely rested.", "zh": "你决定：牙可以等，你的神经系统不能。第二天虽然各种安排都迷迷糊糊，但是真的睡饱了。" }, "effects": { "stress": -8, "stamina": 6, "knowledge": -2 } },
+        { "id": "ask_a_senior", "text": { "en": "Message a second-year for survival tips", "zh": "私信一个二年级要点生存攻略" }, "resultText": { "en": "A kind upperclassman sends you a chaotic but lifesaving voice memo. You feel less alone and slightly more located in space.", "zh": "一位热心学长发来一段混乱但救命的语音。你觉得没那么孤单了，也终于大概知道自己在哪了。" }, "effects": { "confidence": 4, "reputation": 3, "stress": -4, "knowledge": 2 } }
+      ]
+    },
+    {
+      "id": "early_big_basic_science_exam",
+      "title": { "en": "The Anatomy Boss Fight", "zh": "解剖学 Boss 战" },
+      "stage": ["early"],
+      "tags": ["exam", "stress", "study"],
+      "minSemester": 1,
+      "maxSemester": 3,
+      "weight": 10,
+      "text": { "en": "Your first big basic-science exam is in five days, and it covers roughly the entire human head. The study guide is forty pages and somehow gets longer every time you look at it.", "zh": "你的第一场大型基础学科考试还有五天，内容大致涵盖了整个人头。复习提纲四十页，而且你每看一次它好像就变长一点。" },
+      "choices": [
+        { "id": "marathon", "text": { "en": "Cram in one heroic 9-hour session", "zh": "来一场英雄式的九小时通宵刷题" }, "resultText": { "en": "You absorb a frightening amount, then forget your own phone number. The exam goes okay; your eye twitches for two days.", "zh": "你吸收了惊人的信息量，然后忘了自己的手机号。考试还行；眼皮跳了两天。" }, "effects": { "knowledge": 10, "stress": 9, "stamina": -8 } },
+        { "id": "spaced", "text": { "en": "Spread it over five calmer days", "zh": "拆成五天慢慢复习" }, "resultText": { "en": "Suspiciously mature, surprisingly effective. You walk in tired but steady, and actually remember the cranial nerves.", "zh": "成熟得有点可疑，效果好得出奇。你走进考场时虽然累但很稳，居然真的记住了颅神经。" }, "effects": { "knowledge": 8, "confidence": 5, "stress": 2, "stamina": -3 } },
+        { "id": "group_quiz", "text": { "en": "Quiz each other with classmates", "zh": "和同学互相抽背" }, "resultText": { "en": "Half studying, half comedy show, but the embarrassing mistakes are the ones you'll never forget on the test.", "zh": "一半在复习，一半在开演唱会，但那些丢人的错答恰好是考场上你永远忘不了的。" }, "effects": { "knowledge": 6, "reputation": 4, "mood": 5, "stress": -3 } },
+        { "id": "fake_break", "text": { "en": "Rest now, panic-study later", "zh": "现在先休息，临时再爆肝" }, "resultText": { "en": "The break is lovely. Future-you is less thrilled, but you survive on adrenaline and snacks.", "zh": "休息很舒服。未来的你没那么开心，但靠着肾上腺素和零食活了下来。" }, "effects": { "stress": -5, "stamina": 5, "knowledge": 2 } }
+      ]
+    },
+    {
+      "id": "early_endless_memorization",
+      "title": { "en": "The Memorization Mountain", "zh": "背诵的大山" },
+      "stage": ["early"],
+      "tags": ["study", "stress"],
+      "minSemester": 1,
+      "maxSemester": 3,
+      "weight": 9,
+      "text": { "en": "There are two hundred terms to memorize and your flashcard app cheerfully informs you that you have one thousand cards due today. It is not joking.", "zh": "有两百个术语要背，你的 flashcard app 还很开心地告诉你今天有一千张卡要复习。它是认真的。" },
+      "choices": [
+        { "id": "mnemonics", "text": { "en": "Invent absurd mnemonics", "zh": "编一堆离谱的记忆口诀" }, "resultText": { "en": "Your mnemonics are deeply stupid and 100% effective. You'll be muttering them in the exam, smiling.", "zh": "你的口诀蠢到家了，但有效率百分之百。考试时你会一边默念一边偷笑。" }, "effects": { "knowledge": 7, "mood": 4, "stress": -2 } },
+        { "id": "grind", "text": { "en": "Grind every card, no shortcuts", "zh": "硬刚每一张卡，绝不偷懒" }, "resultText": { "en": "Brute force works, but your soul leaves your body somewhere around card 700.", "zh": "硬刚确实有用，但刷到第七百张卡的时候你的灵魂已经出窍了。" }, "effects": { "knowledge": 9, "stamina": -6, "stress": 5 } },
+        { "id": "split_load", "text": { "en": "Only do the cards due today, guilt-free", "zh": "只刷今天该刷的，不愧疚" }, "resultText": { "en": "You cap the damage at a humane level and close the laptop. Progress is progress, and you slept like a person.", "zh": "你把任务量控制在了人能承受的范围然后合上电脑。进步就是进步，而且你像个正常人一样睡了觉。" }, "effects": { "knowledge": 4, "stress": -5, "stamina": 3 } }
+      ]
+    },
+    {
+      "id": "early_finding_a_rhythm",
+      "title": { "en": "Hunting for a Routine", "zh": "寻找属于自己的节奏" },
+      "stage": ["early"],
+      "tags": ["study", "confidence"],
+      "minSemester": 1,
+      "maxSemester": 3,
+      "weight": 9,
+      "text": { "en": "Everyone seems to have a study routine except you. One classmate is a 5 a.m. person; another studies until 2 a.m. You're just a person who studies whenever the panic hits.", "zh": "好像所有人都有自己的学习节奏，除了你。一个同学是五点起的晨型人，另一个学到凌晨两点。而你只是一个一焦虑就开始学的人。" },
+      "choices": [
+        { "id": "copy_morning", "text": { "en": "Try the 5 a.m. early-bird life", "zh": "试试五点起的晨型人生" }, "resultText": { "en": "The sunrise is gorgeous and the library is empty. You're also asleep by 9 p.m. like a tiny tired farmer.", "zh": "日出美极了，图书馆空荡荡的。你也像个又累又小的农民一样晚上九点就睡了。" }, "effects": { "knowledge": 5, "stamina": -3, "confidence": 4, "stress": -2 } },
+        { "id": "build_own", "text": { "en": "Track your energy and design your own", "zh": "记录自己的精力，定制专属节奏" }, "resultText": { "en": "Turns out you peak mid-afternoon. Building around that takes a week, but suddenly studying stops fighting you.", "zh": "原来你的高峰期在下午。围绕这个安排花了一周，但突然之间学习不再跟你对着干了。" }, "effects": { "knowledge": 4, "confidence": 6, "stress": -4, "mood": 3 } },
+        { "id": "no_routine", "text": { "en": "Embrace chaos, lean on caffeine", "zh": "拥抱混乱，靠咖啡因续命" }, "resultText": { "en": "Pure vibes-based scheduling. It works until it spectacularly doesn't, but at least it's flexible.", "zh": "纯凭感觉排日程。一直管用，直到某天彻底崩盘，但至少够灵活。" }, "effects": { "knowledge": 3, "stress": 4, "mood": 2 } }
+      ]
+    },
+    {
+      "id": "early_meeting_classmates",
+      "title": { "en": "Strangers in Scrubs", "zh": "穿刷手服的陌生人们" },
+      "stage": ["early"],
+      "tags": ["social", "confidence"],
+      "minSemester": 1,
+      "maxSemester": 2,
+      "weight": 10,
+      "text": { "en": "Lunch break, and the cafeteria is a sea of people who all seem to already know each other. There's one open seat at a table of laughing strangers.", "zh": "午休时间，食堂里全是看起来早就互相认识的人。一桌有说有笑的陌生人那边，正好空着一个座位。" },
+      "choices": [
+        { "id": "sit_down", "text": { "en": "Take the seat and say hi", "zh": "坐下，打个招呼" }, "resultText": { "en": "Awkward for nine seconds, then someone offers you a fry and it's fine. You've found your people, or at least lunch people.", "zh": "尴尬了九秒，然后有人递给你一根薯条，一切就好了。你找到了自己人，至少是饭搭子。" }, "effects": { "reputation": 6, "mood": 6, "stress": -4, "confidence": 4 } },
+        { "id": "eat_alone", "text": { "en": "Eat alone and recharge", "zh": "一个人吃饭，回回血" }, "resultText": { "en": "Sometimes the social battery just needs a quiet sandwich. You come back to the afternoon calmer, if a little lonelier.", "zh": "有时候社交电量就是需要一个安静的三明治。回到下午时你平静了一些，虽然也有点孤单。" }, "effects": { "stress": -5, "stamina": 3, "mood": -1 } },
+        { "id": "study_lunch", "text": { "en": "Skip lunch chat, review notes instead", "zh": "不聊天，趁机看笔记" }, "resultText": { "en": "You get ahead on the reading, but the table-laughter drifts over and you feel a small pang of FOMO.", "zh": "你提前看完了阅读材料，但那桌的笑声飘过来，你心里还是闪过一丝 FOMO。" }, "effects": { "knowledge": 5, "reputation": -2, "stress": 2 } }
+      ]
+    },
+    {
+      "id": "early_first_white_coat",
+      "title": { "en": "The White Coat Fits", "zh": "白大褂上身的那一刻" },
+      "stage": ["early"],
+      "tags": ["confidence", "social"],
+      "minSemester": 1,
+      "maxSemester": 3,
+      "weight": 11,
+      "text": { "en": "White coat ceremony day. The coat is a little stiff, your name is embroidered on the chest, and your stomach is doing nervous-excited backflips.", "zh": "白大褂授袍仪式那天。大褂还有点硬挺，胸前绣着你的名字，你的胃在做着又紧张又兴奋的后空翻。" },
+      "choices": [
+        { "id": "soak_it_in", "text": { "en": "Stand still and let the moment land", "zh": "站定，让这一刻沉淀下来" }, "resultText": { "en": "You let yourself feel how far you've come. Something quiet and proud settles in your chest, right under the embroidery.", "zh": "你允许自己感受这一路走了多远。一种安静又骄傲的东西落进胸口，正好在那行刺绣下面。" }, "effects": { "confidence": 8, "mood": 7, "stress": -3 } },
+        { "id": "selfie_call", "text": { "en": "Video-call {partner} immediately", "zh": "立刻视频电话给 {partner}" }, "resultText": { "en": "{partner} pretends to faint at how official you look, then says they always knew. You laugh so hard you nearly drop the phone.", "zh": "{partner} 假装被你专业的样子帅晕过去，然后说早就知道你能行。你笑得差点把手机摔了。" }, "effects": { "love": 7, "mood": 6, "confidence": 4 } },
+        { "id": "imposter", "text": { "en": "Quietly worry you don't belong", "zh": "悄悄担心自己根本不配" }, "resultText": { "en": "The imposter voice whispers, but you notice it's just a voice. You straighten the coat and decide to stay anyway.", "zh": "冒充者的声音在耳边低语，但你发现那只是个声音而已。你理了理大褂，决定不管怎样都留下来。" }, "effects": { "confidence": 2, "stress": 3, "knowledge": 1 } }
+      ]
+    },
+    {
+      "id": "early_time_management",
+      "title": { "en": "Where Did the Day Go", "zh": "一天怎么就没了" },
+      "stage": ["early"],
+      "tags": ["study", "stress"],
+      "minSemester": 1,
+      "maxSemester": 3,
+      "weight": 9,
+      "text": { "en": "You blinked and it's 11 p.m. You had three things to do today and somehow did seven other things, none of which were on the list.", "zh": "你一眨眼就晚上十一点了。今天本来有三件事要做，结果你做了另外七件事，没有一件在清单上。" },
+      "choices": [
+        { "id": "time_block", "text": { "en": "Try time-blocking tomorrow", "zh": "明天试试时间分块" }, "resultText": { "en": "You assign each hour a job like a tiny manager. It feels rigid for a day, then strangely freeing.", "zh": "你像个小经理一样给每个小时分配任务。头一天觉得很死板，然后竟然有种奇妙的自由感。" }, "effects": { "knowledge": 4, "confidence": 5, "stress": -3, "stamina": -2 } },
+        { "id": "two_things", "text": { "en": "Pick just two priorities a day", "zh": "每天只挑两件最重要的" }, "resultText": { "en": "Radically smaller list, radically less guilt. You finish both and feel like a functioning adult for once.", "zh": "清单大幅缩水，愧疚也大幅缩水。两件都做完了，你难得觉得自己是个正常运转的成年人。" }, "effects": { "knowledge": 3, "stress": -6, "mood": 4 } },
+        { "id": "just_push", "text": { "en": "Stay up to claw the day back", "zh": "熬夜把今天找补回来" }, "resultText": { "en": "You reclaim the lost hours from your sleep account. The interest rate on that loan is brutal.", "zh": "你从睡眠账户里把丢掉的时间补了回来。这笔贷款的利息高得吓人。" }, "effects": { "knowledge": 5, "stamina": -7, "stress": 4 } }
+      ]
+    },
+    {
+      "id": "early_homesickness",
+      "title": { "en": "A Long Way From Home", "zh": "离家很远的夜晚" },
+      "stage": ["early"],
+      "tags": ["stress", "social"],
+      "minSemester": 1,
+      "maxSemester": 3,
+      "weight": 9,
+      "condition": { "maxStats": { "mood": 50 } },
+      "text": { "en": "It's a rainy Sunday and the apartment is too quiet. You miss your old kitchen, your old friends, and the way nobody back home asks what a periodontal ligament is.", "zh": "一个下雨的周日，公寓安静得过分。你想念以前的厨房，以前的朋友，还有老家没人会问你牙周韧带是什么的日子。" },
+      "choices": [
+        { "id": "call_home", "text": { "en": "Call family and just talk", "zh": "给家里打个电话，就随便聊聊" }, "resultText": { "en": "They tell you the dog is fine and the neighbor is still weird. You hang up lighter, homesickness softened into something warm.", "zh": "他们告诉你狗很好，邻居还是那么怪。挂电话时你轻松了不少，乡愁化成了某种温暖的东西。" }, "effects": { "mood": 6, "stress": -6, "stamina": 2 } },
+        { "id": "cook_comfort", "text": { "en": "Cook a dish from back home", "zh": "做一道家乡菜" }, "resultText": { "en": "The kitchen smells like your childhood and you eat it standing up, smiling. It costs a bit but the comfort is worth it.", "zh": "厨房里飘着童年的味道，你站着把它吃完，一直在笑。花了点钱，但这份慰藉值。" }, "effects": { "mood": 7, "stress": -5, "money": -4 } },
+        { "id": "bury_it", "text": { "en": "Push it down and study harder", "zh": "把情绪压下去，更拼命地学" }, "resultText": { "en": "You get a lot done, but the quiet ache is still there at midnight. Productive, not exactly healed.", "zh": "你学了很多东西，但那种安静的酸楚到了半夜还在。是高效，但说不上治愈。" }, "effects": { "knowledge": 6, "mood": -3, "stress": 3 } }
+      ]
+    },
+    {
+      "id": "early_comparing_to_peers",
+      "title": { "en": "The Comparison Trap", "zh": "比较的陷阱" },
+      "stage": ["early"],
+      "tags": ["stress", "confidence", "social"],
+      "minSemester": 1,
+      "maxSemester": 3,
+      "weight": 10,
+      "condition": { "maxStats": { "confidence": 50 } },
+      "text": { "en": "A classmate casually mentions they've already read three chapters ahead, finished the optional cases, and learned to suture from a YouTube channel. You have read the syllabus. Once.", "zh": "一个同学随口提到他们已经提前看了三章，做完了选做病例，还在 YouTube 上学会了缝合。而你看完了 syllabus。看了一次。" },
+      "choices": [
+        { "id": "own_pace", "text": { "en": "Remind yourself it's not a race", "zh": "提醒自己这不是赛跑" }, "resultText": { "en": "You exhale and remember everyone's timeline is different. The comparison loosens its grip, just a little.", "zh": "你呼出一口气，想起每个人的时间线都不一样。比较的手稍微松开了一点。" }, "effects": { "confidence": 5, "stress": -5, "mood": 3 } },
+        { "id": "use_as_fuel", "text": { "en": "Use it as motivation to push", "zh": "把它当成往前冲的燃料" }, "resultText": { "en": "You channel the sting into a focused study night. It works, but you make a note to not do this every day.", "zh": "你把那点刺痛转化成了一个专注的学习夜晚。有用，但你提醒自己别天天这样。" }, "effects": { "knowledge": 7, "stress": 4, "confidence": 2 } },
+        { "id": "ask_to_share", "text": { "en": "Ask them to study together", "zh": "约他们一起学" }, "resultText": { "en": "Turns out the over-achiever is lonely and thrilled to share notes. You both come out ahead, and they're actually funny.", "zh": "原来那个学霸其实很孤单，超开心地分享了笔记。你俩都赚了，而且他人还挺逗。" }, "effects": { "knowledge": 6, "reputation": 4, "stress": -3 } }
+      ]
+    },
+    {
+      "id": "early_discovering_coffee",
+      "title": { "en": "First Real Cup of Coffee", "zh": "人生第一杯认真的咖啡" },
+      "stage": ["early"],
+      "tags": ["study", "social"],
+      "minSemester": 1,
+      "maxSemester": 2,
+      "weight": 8,
+      "text": { "en": "Until now, coffee was a thing other people did. Tonight, staring down a thick study packet, you consider crossing over to the dark, caffeinated side.", "zh": "在此之前，咖啡是别人才喝的东西。今晚，盯着一叠厚厚的复习资料，你考虑要不要投奔黑暗的、含咖啡因的那一边。" },
+      "choices": [
+        { "id": "small_cup", "text": { "en": "Try one small cup, see how it goes", "zh": "先来一小杯，看看情况" }, "resultText": { "en": "Mild buzz, pleasant focus, no regrets. You feel like a slightly more dangerous version of yourself.", "zh": "微微上头，专注度愉快地提升，毫无遗憾。你感觉自己变成了一个稍微危险一点的版本。" }, "effects": { "knowledge": 4, "stamina": 4, "stress": -1 } },
+        { "id": "double_shot", "text": { "en": "Go straight to a double shot", "zh": "直接上双份浓缩" }, "resultText": { "en": "You study with the intensity of a hummingbird, then lie awake at 3 a.m. hearing your own heartbeat. Worth it? Debatable.", "zh": "你以蜂鸟般的强度学习，然后凌晨三点躺着睡不着，听见自己的心跳。值吗？有待商榷。" }, "effects": { "knowledge": 7, "stamina": 5, "stress": 6 } },
+        { "id": "stay_tea", "text": { "en": "Stick with tea and an early night", "zh": "还是喝茶，早点睡" }, "resultText": { "en": "You keep your nervous system intact and review a little less. The tooth can wait; your sleep schedule thanks you.", "zh": "你保住了自己的神经系统，少复习了一点。牙可以等；你的作息表很感激你。" }, "effects": { "stress": -5, "stamina": 3, "knowledge": 1 } }
+      ]
+    },
+    {
+      "id": "early_quiz_back",
+      "title": { "en": "Getting the Quiz Back", "zh": "小测发回来了" },
+      "stage": ["early"],
+      "tags": ["exam", "confidence", "stress"],
+      "minSemester": 1,
+      "maxSemester": 3,
+      "weight": 10,
+      "text": { "en": "The first quiz is handed back and your score is lower than you hoped. The red ink is doing the most. Around you, people are comparing numbers.", "zh": "第一次小测发回来了，分数比你期望的低。那些红笔批注简直用力过猛。你周围的人在互相对答案、比分数。" },
+      "choices": [
+        { "id": "review_mistakes", "text": { "en": "Quietly go through every wrong answer", "zh": "安静地把每道错题过一遍" }, "resultText": { "en": "Painful but useful: you find a pattern in your mistakes and patch it. The next quiz won't catch you the same way.", "zh": "痛但有用：你发现了错题里的规律并补上了它。下次小测不会用同样的方式抓到你了。" }, "effects": { "knowledge": 7, "confidence": 3, "stress": -1 } },
+        { "id": "spiral", "text": { "en": "Compare scores and quietly spiral", "zh": "对比分数然后悄悄内耗" }, "resultText": { "en": "The numbers game eats an hour and leaves you flatter than before. You learn that this particular hobby has no winners.", "zh": "比分数这个游戏吃掉了你一个小时，让你比之前更低落。你学到了：这个爱好没有赢家。" }, "effects": { "mood": -4, "stress": 5, "confidence": -3 } },
+        { "id": "talk_prof", "text": { "en": "Ask the professor what you missed", "zh": "去问教授自己哪里没掌握" }, "resultText": { "en": "The professor is kinder than the red ink suggested and points you to exactly what to fix. You leave reassured.", "zh": "教授比那些红笔批注温和多了，精准地告诉你该补哪里。你走出办公室时安心了不少。" }, "effects": { "knowledge": 5, "confidence": 5, "reputation": 2, "stress": -3 } }
+      ]
+    },
+    {
+      "id": "early_study_group_dynamics",
+      "title": { "en": "Study Group Chemistry", "zh": "学习小组的化学反应" },
+      "stage": ["early"],
+      "tags": ["social", "study", "stress"],
+      "minSemester": 1,
+      "maxSemester": 3,
+      "weight": 9,
+      "text": { "en": "Your new study group has one person who over-explains, one who only shows up to copy, and one who is genuinely brilliant but easily distracted. Tonight's session could go either way.", "zh": "你的新学习小组里有一个什么都过度讲解的，一个只来抄答案的，还有一个真的很聪明但特别容易跑题的。今晚这场学习不好说会往哪走。" },
+      "choices": [
+        { "id": "set_structure", "text": { "en": "Gently propose an agenda", "zh": "温和地提议定个流程" }, "resultText": { "en": "You suggest topics and time limits without being bossy. The group actually gets through the material and likes you for it.", "zh": "你不强势地提出了主题和时间限制。小组真的把内容过完了，还因此更喜欢你了。" }, "effects": { "knowledge": 6, "reputation": 5, "confidence": 4, "stress": -2 } },
+        { "id": "go_along", "text": { "en": "Go with the flow, chaos and all", "zh": "随大流，混乱就混乱吧" }, "resultText": { "en": "It's 40% studying, 60% tangents about cafeteria pizza. You learn a little and laugh a lot.", "zh": "百分之四十在学习，百分之六十在跑题聊食堂披萨。你学到了一点点，笑到了一大堆。" }, "effects": { "mood": 5, "reputation": 3, "knowledge": 2, "stress": -3 } },
+        { "id": "leave_solo", "text": { "en": "Bow out and study solo tonight", "zh": "退出，今晚自己学" }, "resultText": { "en": "Alone, you cover twice the material in half the time. You also miss the in-jokes forming without you.", "zh": "一个人时，你用一半的时间学了两倍的内容。但你也错过了在没有你的情况下形成的那些梗。" }, "effects": { "knowledge": 7, "reputation": -2, "stress": 1 } }
+      ]
+    },
+    {
+      "id": "early_office_hours",
+      "title": { "en": "Daring to Knock", "zh": "鼓起勇气敲门" },
+      "stage": ["early"],
+      "tags": ["confidence", "study", "social"],
+      "minSemester": 1,
+      "maxSemester": 3,
+      "weight": 9,
+      "text": { "en": "There's a concept that has refused to make sense for two weeks. Office hours are right now, the professor's door is open, and your hand is hovering near the doorframe.", "zh": "有个概念已经整整两周拒绝被你理解。教授的 office hours 正好是现在，门开着，你的手悬在门框边上。" },
+      "choices": [
+        { "id": "go_in", "text": { "en": "Knock and ask your 'dumb' question", "zh": "敲门，问出你那个“蠢”问题" }, "resultText": { "en": "Turns out half the class was confused by the same thing. The professor explains it once and it finally clicks.", "zh": "原来半个班都被同一个东西困住了。教授讲了一遍，它终于通了。" }, "effects": { "knowledge": 8, "confidence": 5, "reputation": 3, "stress": -2 } },
+        { "id": "google_first", "text": { "en": "Retreat and try to Google it alone", "zh": "撤退，自己先去 Google" }, "resultText": { "en": "You eventually sort of get it from a forum post, but it took three times as long and you're not fully sure.", "zh": "你最后靠一个论坛帖子勉强搞懂了，但花了三倍时间，而且也没完全确定。" }, "effects": { "knowledge": 3, "stamina": -3, "confidence": -1 } },
+        { "id": "bring_partner_note", "text": { "en": "Go in with the questions {partner} helped you list", "zh": "带着 {partner} 帮你列的问题清单进去" }, "resultText": { "en": "{partner} had made you write your questions down last night 'so you don't freeze.' You don't freeze. It works beautifully.", "zh": "{partner} 昨晚让你把问题都写下来，“免得你一紧张就忘”。你没忘。效果好得很。" }, "effects": { "knowledge": 7, "confidence": 6, "love": 3, "stress": -3 } }
+      ]
+    },
+    {
+      "id": "early_learning_to_say_no",
+      "title": { "en": "Learning to Say No", "zh": "学着说不" },
+      "stage": ["early"],
+      "tags": ["stress", "social", "confidence"],
+      "minSemester": 2,
+      "maxSemester": 3,
+      "weight": 9,
+      "condition": { "maxStats": { "stamina": 50 } },
+      "text": { "en": "You're already stretched thin when three invitations land at once: a club committee, a weekend trip, and a classmate begging for help moving apartments. Your calendar is sweating.", "zh": "你已经快被掏空了，结果三个邀约同时砸下来：一个社团委员会、一个周末旅行，还有一个同学求你帮忙搬家。你的日历都在冒汗。" },
+      "choices": [
+        { "id": "say_no_kindly", "text": { "en": "Politely decline two of them", "zh": "礼貌地推掉其中两个" }, "resultText": { "en": "Saying no out loud feels weird and then immediately wonderful. You protect your week and nobody hates you.", "zh": "把“不”说出口很奇怪，然后立刻变得超爽。你守住了自己的一周，也没人因此讨厌你。" }, "effects": { "stress": -7, "stamina": 5, "confidence": 4, "reputation": -1 } },
+        { "id": "say_yes_all", "text": { "en": "Say yes to everything, somehow", "zh": "全都答应，硬撑" }, "resultText": { "en": "You become wildly popular and wildly exhausted. By Sunday night you are a husk with great social connections.", "zh": "你变得超受欢迎，也超级累。到周日晚上，你成了一个社交关系良好的空壳。" }, "effects": { "reputation": 6, "mood": 3, "stamina": -8, "stress": 7 } },
+        { "id": "help_friend_only", "text": { "en": "Skip the fun, help the friend move", "zh": "放弃娱乐，去帮朋友搬家" }, "resultText": { "en": "Carrying boxes is tiring, but the friendship deepens over pizza on the floor afterward. A fair trade.", "zh": "搬箱子很累，但事后坐在地板上吃披萨时，这段友情更深了。划算。" }, "effects": { "reputation": 4, "mood": 4, "stamina": -5, "stress": 2 } }
+      ]
+    },
+    {
+      "id": "early_first_small_win",
+      "title": { "en": "A Small, Real Win", "zh": "一个小小的、真实的胜利" },
+      "stage": ["early"],
+      "tags": ["confidence", "study"],
+      "minSemester": 1,
+      "maxSemester": 3,
+      "weight": 10,
+      "text": { "en": "For the first time, something just worked: you explained a concept to a classmate and they finally got it, watching the understanding land on their face like sunrise. Huh. You actually know things now.", "zh": "第一次，有件事就这么顺了：你给同学讲了一个概念，他们终于懂了，那种恍然大悟像日出一样落在他们脸上。咦，原来你现在是真的懂东西了。" },
+      "choices": [
+        { "id": "celebrate", "text": { "en": "Treat yourself to something small", "zh": "给自己买点小东西庆祝一下" }, "resultText": { "en": "You buy the fancy pastry, no guilt. Marking small wins turns out to be how you keep going for the long haul.", "zh": "你买了那个高级点心，毫无愧疚。给小胜利打个卡，原来正是能撑到最后的秘诀。" }, "effects": { "mood": 6, "confidence": 5, "money": -3, "stress": -3 } },
+        { "id": "tutor_more", "text": { "en": "Offer to keep helping classmates", "zh": "主动表示愿意继续帮同学" }, "resultText": { "en": "Teaching cements your own knowledge and your reputation quietly grows. It does eat into your own study time, though.", "zh": "教别人巩固了你自己的知识，你的口碑也悄悄涨了。不过确实占用了你自己的学习时间。" }, "effects": { "knowledge": 6, "reputation": 6, "confidence": 3, "stamina": -3 } },
+        { "id": "tell_partner", "text": { "en": "Text {partner} about it right away", "zh": "马上发消息告诉 {partner}" }, "resultText": { "en": "{partner} replies with seventeen exclamation marks and calls you 'professor' for the rest of the week. You glow a little.", "zh": "{partner} 回了十七个感叹号，接下来一整周都叫你“教授”。你心里美滋滋的。" }, "effects": { "love": 5, "mood": 6, "confidence": 4 } }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+{
+  "events": [
+    {
+      "id": "pre_first_sim_lab",
+      "title": { "en": "First Sim Lab", "zh": "第一次 sim lab" },
+      "stage": ["preclinical", "transition"],
+      "tags": ["lab", "handSkill", "stress"],
+      "minSemester": 2,
+      "maxSemester": 6,
+      "weight": 11,
+      "text": { "en": "The typodont stares back at you. The handpiece feels like a power tool you definitely did not pass a safety course for. Everyone around you is already going.", "zh": "假牙模型静静地盯着你。手机（handpiece）拿在手里像个你绝对没考过安全证的电动工具。周围的人都已经开始动手了。" },
+      "choices": [
+        { "id": "dive_in", "text": { "en": "Just start and learn by doing", "zh": "直接开整，边做边学" }, "resultText": { "en": "Chaotic, but your hands start remembering what your brain forgot.", "zh": "手忙脚乱，但你的手开始记住大脑忘掉的东西。" }, "effects": { "handSkill": 6, "stress": 4, "confidence": 2 } },
+        { "id": "watch_neighbor", "text": { "en": "Quietly copy the calm person next to you", "zh": "悄悄模仿旁边那个很淡定的同学" }, "resultText": { "en": "You learn the grip but lose ten minutes of bench time.", "zh": "学会了握持的姿势，但少了十分钟练习时间。" }, "effects": { "handSkill": 3, "knowledge": 3, "stress": -1 } },
+        { "id": "read_manual", "text": { "en": "Reread the lab manual first", "zh": "先把实验手册重新看一遍" }, "resultText": { "en": "Suspiciously mature, surprisingly effective. Slower start though.", "zh": "成熟得有点可疑，但意外地有效。就是起步慢了点。" }, "effects": { "knowledge": 5, "handSkill": 1, "stress": -2 } }
+      ]
+    },
+    {
+      "id": "pre_waxup_marathon",
+      "title": { "en": "Wax-Up Marathon", "zh": "蜡型马拉松" },
+      "stage": ["preclinical", "transition"],
+      "tags": ["lab", "handSkill", "stress"],
+      "minSemester": 2,
+      "maxSemester": 6,
+      "weight": 10,
+      "text": { "en": "Carving cusps out of wax for the fifth hour. Your tiny molar is either a masterpiece or a potato, depending on the lighting.", "zh": "雕蜡型雕到第五个小时了。你那颗小磨牙到底是艺术品还是个土豆，全看打光角度。" },
+      "choices": [
+        { "id": "perfect_anatomy", "text": { "en": "Chase textbook-perfect anatomy", "zh": "死磕教科书级别的解剖结构" }, "resultText": { "en": "The cusps look real. Your back and stamina disagree with the decision.", "zh": "牙尖看着挺真。但你的腰和体力对这个决定有意见。" }, "effects": { "handSkill": 8, "stamina": -6, "stress": 3 } },
+        { "id": "good_enough", "text": { "en": "Call it good enough and go home", "zh": "差不多得了，回家" }, "resultText": { "en": "Done is better than perfect. {partner} reheats dinner for you.", "zh": "完成胜过完美。{partner} 把饭给你热好了。" }, "effects": { "handSkill": 4, "stress": -4, "love": 3, "stamina": 2 } },
+        { "id": "ask_feedback", "text": { "en": "Flag down a tutor for a quick check", "zh": "拦个助教快速看一眼" }, "resultText": { "en": "One tip about your marginal ridge saves you an hour of guessing.", "zh": "关于边缘嵴的一句提点，省了你一小时瞎猜。" }, "effects": { "knowledge": 4, "handSkill": 3, "stress": -1 } }
+      ]
+    },
+    {
+      "id": "pre_half_mm_off",
+      "title": { "en": "Off by 0.5 mm", "zh": "差了 0.5 毫米" },
+      "stage": ["preclinical", "transition"],
+      "tags": ["lab", "handSkill", "confidence"],
+      "minSemester": 2,
+      "maxSemester": 6,
+      "weight": 11,
+      "condition": { "maxStats": { "confidence": 55 } },
+      "text": { "en": "Your prep depth is 0.5 mm too deep. On paper that's nothing. In your nervous system, it is a catastrophe.", "zh": "你的预备深度多了 0.5 毫米。写在纸上啥也不是。但在你的神经系统里，这是一场灾难。" },
+      "choices": [
+        { "id": "redo_clean", "text": { "en": "Redo it properly on a fresh tooth", "zh": "换颗新牙，老老实实重做" }, "resultText": { "en": "The second one is sharper. The tooth can wait; your standards can't.", "zh": "第二颗明显更利落。牙可以等，但你的标准不能。" }, "effects": { "handSkill": 6, "stress": 2, "confidence": 4, "stamina": -3 } },
+        { "id": "let_it_go", "text": { "en": "Accept it and note the lesson", "zh": "接受它，记下教训" }, "resultText": { "en": "0.5 mm of grace for yourself. You'll feel it in your hands next time.", "zh": "给自己 0.5 毫米的宽容。下次手上自然会有感觉。" }, "effects": { "knowledge": 4, "stress": -3, "confidence": 1 } },
+        { "id": "spiral", "text": { "en": "Stare at it and quietly spiral", "zh": "盯着它，默默 emo" }, "resultText": { "en": "Twenty minutes gone, no tooth improved. Spiraling is not a technique.", "zh": "二十分钟没了，牙一点没变好。emo 不是一种技术。" }, "effects": { "stress": 5, "mood": -3, "confidence": -2 } }
+      ]
+    },
+    {
+      "id": "pre_hand_fatigue",
+      "title": { "en": "Hand Fatigue", "zh": "手累了" },
+      "stage": ["preclinical", "transition"],
+      "tags": ["lab", "handSkill", "stress"],
+      "minSemester": 2,
+      "maxSemester": 6,
+      "weight": 10,
+      "text": { "en": "Three hours of fine motor control and your fingers are starting to file their own complaint. Your grip is getting shaky.", "zh": "精细操作三个小时，你的手指开始自己写投诉信了。握得越来越抖。" },
+      "choices": [
+        { "id": "push_through", "text": { "en": "Push through to finish the unit", "zh": "硬撑着把这个单元做完" }, "resultText": { "en": "You finish, but the last cuts are messier than the first.", "zh": "做完了，但最后几刀明显比开头糙。" }, "effects": { "handSkill": 3, "stamina": -7, "stress": 4 } },
+        { "id": "stretch_break", "text": { "en": "Stop, stretch, shake it out", "zh": "停下，拉伸，甩甩手" }, "resultText": { "en": "Five minutes of stretching and your hands come back online.", "zh": "拉伸五分钟，手又重新上线了。" }, "effects": { "stamina": 4, "stress": -3, "handSkill": 1 } },
+        { "id": "coffee_run", "text": { "en": "Grab coffee with a labmate", "zh": "和同学去买杯咖啡" }, "resultText": { "en": "Caffeine and gossip. Your money goes down; your mood goes up.", "zh": "咖啡因加八卦。钱包瘪了，心情好了。" }, "effects": { "mood": 4, "stress": -2, "money": -2, "stamina": 2 } }
+      ]
+    },
+    {
+      "id": "pre_instrument_names",
+      "title": { "en": "Learning the Instrument Names", "zh": "记器械的名字" },
+      "stage": ["preclinical", "transition"],
+      "tags": ["lab", "stress", "confidence"],
+      "minSemester": 2,
+      "maxSemester": 6,
+      "weight": 9,
+      "text": { "en": "The tray has fourteen pointy things and they all have the energy of a password you forgot. The instructor calls one by name and waits.", "zh": "托盘上十四个尖尖的东西，每一个都散发着你忘掉的密码的气息。老师报了一个名字，等着你递。" },
+      "choices": [
+        { "id": "flashcards", "text": { "en": "Make flashcards that night", "zh": "当晚做一套抽认卡" }, "resultText": { "en": "Boring, but next week you hand them over without hesitating.", "zh": "无聊，但下周你递器械时一点都不带犹豫的。" }, "effects": { "knowledge": 6, "confidence": 3, "stress": -1 } },
+        { "id": "wing_it", "text": { "en": "Wing it and hope context helps", "zh": "硬猜，指望情境能帮忙" }, "resultText": { "en": "You guess wrong twice. Mildly embarrassing, weirdly memorable.", "zh": "你猜错了两次。有点尴尬，但记得出奇地牢。" }, "effects": { "knowledge": 2, "confidence": -2, "stress": 2 } },
+        { "id": "quiz_partner", "text": { "en": "Quiz each other with a labmate", "zh": "和同学互相抽背" }, "resultText": { "en": "You both learn faster and laugh at the silly names.", "zh": "两个人都学得更快，还顺便嘲笑了那些奇怪的名字。" }, "effects": { "knowledge": 5, "mood": 3, "reputation": 1 } }
+      ]
+    },
+    {
+      "id": "pre_faculty_bench_check",
+      "title": { "en": "The Faculty Bench Check", "zh": "老师来查台" },
+      "stage": ["preclinical", "transition"],
+      "tags": ["lab", "stress", "confidence"],
+      "minSemester": 2,
+      "maxSemester": 6,
+      "weight": 11,
+      "text": { "en": "A faculty member is doing the rounds with a mirror and an explorer, working their way down the bench toward you. Your prep is... fine? Probably?", "zh": "一位老师正拿着口镜和探针挨个查台，沿着桌子一步步朝你这边走来。你的预备……还行吧？应该吧？" },
+      "choices": [
+        { "id": "own_it", "text": { "en": "Point out your own weak spot first", "zh": "主动先指出自己的薄弱点" }, "resultText": { "en": "They nod, respect the honesty, and give you a real fix.", "zh": "老师点点头，欣赏你的坦诚，给了你一个真正有用的改法。" }, "effects": { "knowledge": 5, "reputation": 3, "stress": -2 } },
+        { "id": "say_nothing", "text": { "en": "Stay quiet and let them find it", "zh": "闭嘴，让老师自己发现" }, "resultText": { "en": "They find it anyway. Same feedback, slightly more sweating.", "zh": "老师反正也发现了。一样的反馈，就是你多出了点汗。" }, "effects": { "knowledge": 4, "stress": 3 } },
+        { "id": "oversell", "text": { "en": "Confidently oversell the prep", "zh": "自信满满地夸大其词" }, "resultText": { "en": "The explorer catches the undercut. Confidence: re-calibrated.", "zh": "探针一下就勾到了倒凹。自信：已重新校准。" }, "effects": { "confidence": -3, "reputation": -2, "knowledge": 3 } }
+      ]
+    },
+    {
+      "id": "pre_redo_prep",
+      "title": { "en": "Redo the Prep", "zh": "重做预备" },
+      "stage": ["preclinical", "transition"],
+      "tags": ["lab", "handSkill", "stress"],
+      "minSemester": 2,
+      "maxSemester": 6,
+      "weight": 10,
+      "text": { "en": "\"Start over,\" says the tutor, not unkindly. You have one fresh typodont tooth and a slowly sinking feeling.", "zh": "“重来一次吧，”助教语气其实不坏。你手里有一颗新的假牙，外加一种慢慢往下沉的心情。" },
+      "choices": [
+        { "id": "fresh_mindset", "text": { "en": "Treat it as a free practice rep", "zh": "把它当成一次免费的练习机会" }, "resultText": { "en": "Reframed and relaxed, your hands actually do better this time.", "zh": "换个心态放松下来，这次你的手反而做得更好。" }, "effects": { "handSkill": 7, "confidence": 3, "stress": -1 } },
+        { "id": "grumble", "text": { "en": "Grumble but grind it out", "zh": "嘴上抱怨，手上照做" }, "resultText": { "en": "Done correctly, mood slightly dented, lesson absolutely learned.", "zh": "做对了，心情有点小受伤，但教训是真学到了。" }, "effects": { "handSkill": 5, "mood": -2, "stamina": -3, "stress": 2 } },
+        { "id": "ask_why", "text": { "en": "Ask exactly what to change", "zh": "问清楚到底要改哪里" }, "resultText": { "en": "The specific answer turns a redo into an upgrade.", "zh": "一个具体的答案，把重做变成了升级。" }, "effects": { "knowledge": 5, "handSkill": 4 } }
+      ]
+    },
+    {
+      "id": "pre_flow_state",
+      "title": { "en": "Flow State", "zh": "心流状态" },
+      "stage": ["preclinical", "transition"],
+      "tags": ["lab", "handSkill", "confidence"],
+      "minSemester": 2,
+      "maxSemester": 6,
+      "weight": 9,
+      "text": { "en": "Somewhere in the last half hour the noise faded and it was just you, the bur, and the tooth. Your hands knew exactly what to do. Then you look up and three hours vanished.", "zh": "不知道从哪半小时开始，周围的噪音消失了，只剩下你、车针和那颗牙。你的手清楚地知道该干嘛。等你一抬头，三个小时没了。" },
+      "choices": [
+        { "id": "ride_it", "text": { "en": "Ride the wave for one more unit", "zh": "趁手感再多做一个单元" }, "resultText": { "en": "Best work of the semester. Also you forgot to eat.", "zh": "这学期做得最好的一次。顺便你忘了吃饭。" }, "effects": { "handSkill": 9, "confidence": 4, "stamina": -5 } },
+        { "id": "stop_high", "text": { "en": "Stop on a high note and rest", "zh": "在状态最好的时候收手休息" }, "resultText": { "en": "Suspiciously mature. You leave proud and still have energy.", "zh": "成熟得有点可疑。你心满意足地走了，还有余力。" }, "effects": { "handSkill": 5, "confidence": 3, "stress": -3 } },
+        { "id": "tell_partner", "text": { "en": "Text {partner} that it finally clicked", "zh": "发消息告诉 {partner} 你突然开窍了" }, "resultText": { "en": "{partner} replies with three exclamation marks and a cookie emoji.", "zh": "{partner} 回了你三个感叹号和一个饼干表情。" }, "effects": { "handSkill": 4, "mood": 4, "love": 3 } }
+      ]
+    },
+    {
+      "id": "pre_late_night_lab",
+      "title": { "en": "Late-Night Lab", "zh": "深夜实验室" },
+      "stage": ["preclinical", "transition"],
+      "tags": ["lab", "stress", "handSkill"],
+      "minSemester": 2,
+      "maxSemester": 6,
+      "weight": 10,
+      "condition": { "maxStats": { "stamina": 50 } },
+      "text": { "en": "It's 10:40 pm and the lab is nearly empty. Your brain has roughly 80 tabs open and two of them are playing audio. The deadline is tomorrow.", "zh": "晚上十点四十，实验室快空了。你的大脑大概开了 80 个标签页，其中两个还在自动播放声音。明天就是 deadline。" },
+      "choices": [
+        { "id": "finish_tonight", "text": { "en": "Power through and finish tonight", "zh": "拼一把，今晚做完" }, "resultText": { "en": "Done at midnight. Tomorrow-you will have opinions about tonight-you.", "zh": "半夜搞定。明天的你会对今晚的你有点意见。" }, "effects": { "handSkill": 4, "stamina": -8, "stress": 3 } },
+        { "id": "go_home_sleep", "text": { "en": "Go home; the tooth can wait", "zh": "回家，牙可以等" }, "resultText": { "en": "The tooth can wait; your nervous system cannot. You sleep, you recover.", "zh": "牙可以等，你的神经系统不能。你好好睡了一觉，缓过来了。" }, "effects": { "stamina": 6, "stress": -5, "handSkill": -1 } },
+        { "id": "early_morning", "text": { "en": "Set a 6 am alarm to finish fresh", "zh": "定个早上六点的闹钟，醒来再做" }, "resultText": { "en": "A gamble, but morning-you has steadier hands and clearer eyes.", "zh": "有点赌，但早上的你手更稳、眼更清。" }, "effects": { "handSkill": 5, "stamina": -2, "stress": -1 } }
+      ]
+    },
+    {
+      "id": "pre_loupes_upgrade",
+      "title": { "en": "Loupes and Magnification", "zh": "放大镜（loupes）" },
+      "stage": ["preclinical", "transition"],
+      "tags": ["lab", "handSkill", "confidence"],
+      "minSemester": 2,
+      "maxSemester": 6,
+      "weight": 9,
+      "text": { "en": "You finally try a borrowed pair of loupes. Suddenly your prep, which felt smooth, looks like a moon landscape. Both horrifying and incredibly useful.", "zh": "你终于试了试借来的 loupes。本来感觉很顺滑的预备，一下子变成了月球表面。又吓人又超级有用。" },
+      "choices": [
+        { "id": "buy_own", "text": { "en": "Save up and order your own pair", "zh": "攒钱给自己买一副" }, "resultText": { "en": "Pricey, but your detail work jumps a whole level. Worth it.", "zh": "挺贵，但你的细节处理直接上了一个台阶。值。" }, "effects": { "handSkill": 7, "money": -12, "confidence": 4 } },
+        { "id": "borrow_more", "text": { "en": "Keep borrowing for now", "zh": "暂时先继续借着用" }, "resultText": { "en": "Free, but you only get the benefit on lucky days.", "zh": "免费，但只有运气好的时候才借得到。" }, "effects": { "handSkill": 3, "stress": 1 } },
+        { "id": "naked_eye", "text": { "en": "Stick to the naked eye for grit", "zh": "坚持肉眼，练基本功" }, "resultText": { "en": "Your eyes work harder; your fundamentals get tougher. Trade-off accepted.", "zh": "眼睛更累，但基本功更扎实。这笔交易你接受。" }, "effects": { "handSkill": 4, "stamina": -3, "confidence": 1 } }
+      ]
+    },
+    {
+      "id": "pre_perfectionism_deadline",
+      "title": { "en": "Perfectionism vs Deadline", "zh": "完美主义 vs 截止时间" },
+      "stage": ["preclinical", "transition"],
+      "tags": ["lab", "stress", "confidence"],
+      "minSemester": 2,
+      "maxSemester": 6,
+      "weight": 11,
+      "condition": { "maxStats": { "mood": 55 } },
+      "text": { "en": "You could submit a solid prep now, or spend two more hours chasing a polish nobody asked for. The clock is very much watching.", "zh": "你现在可以交一份很扎实的预备，也可以再花两小时去追一个没人要求的抛光。时钟正盯着你呢。" },
+      "choices": [
+        { "id": "submit_now", "text": { "en": "Submit the solid version now", "zh": "现在就交这份扎实的版本" }, "resultText": { "en": "Good enough is genuinely good. You buy back your evening.", "zh": "“差不多”其实真的挺好。你把整个晚上赎回来了。" }, "effects": { "stress": -5, "mood": 3, "handSkill": 2 } },
+        { "id": "two_more_hours", "text": { "en": "Chase the perfect polish", "zh": "继续追求完美抛光" }, "resultText": { "en": "Marginally prettier, meaningfully more tired. The grade is identical.", "zh": "稍微好看了一点点，但累了一大截。分数一模一样。" }, "effects": { "handSkill": 3, "stamina": -6, "stress": 4 } },
+        { "id": "one_fix", "text": { "en": "Fix one thing, then submit", "zh": "只改一个地方，然后就交" }, "resultText": { "en": "Disciplined. One targeted fix, then you walk away clean.", "zh": "有分寸。改一处关键的，然后干净利落地收工。" }, "effects": { "handSkill": 4, "stress": -2, "confidence": 2 } }
+      ]
+    },
+    {
+      "id": "pre_back_ergonomics",
+      "title": { "en": "Your Back Files a Complaint", "zh": "你的腰提交了投诉" },
+      "stage": ["preclinical", "transition"],
+      "tags": ["lab", "stress", "handSkill"],
+      "minSemester": 2,
+      "maxSemester": 6,
+      "weight": 10,
+      "text": { "en": "You've been hunched over the typodont like a question mark for hours. There's a knot between your shoulder blades that has its own zip code now.", "zh": "你已经像个问号一样弓在假牙模型上好几个小时了。肩胛骨之间那个结，现在都有自己的门牌号了。" },
+      "choices": [
+        { "id": "fix_posture", "text": { "en": "Reset your chair, mirror, and posture", "zh": "重新调整椅子、口镜和坐姿" }, "resultText": { "en": "Ten minutes of setup saves your spine and steadies your hands.", "zh": "花十分钟调整，救了你的脊椎，也让手更稳了。" }, "effects": { "stamina": 4, "handSkill": 3, "stress": -2 } },
+        { "id": "ignore_back", "text": { "en": "Ignore it and keep grinding", "zh": "无视它，继续干" }, "resultText": { "en": "You finish more, but you'll be walking like a creaky door tomorrow.", "zh": "多做了点，但明天你走路会像扇吱呀作响的门。" }, "effects": { "handSkill": 3, "stamina": -7, "stress": 2 } },
+        { "id": "walk_lap", "text": { "en": "Take a lap and roll your shoulders", "zh": "出去走一圈，转转肩膀" }, "resultText": { "en": "The knot loosens, your eyes refocus. Cheap, effective maintenance.", "zh": "结松开了，眼睛也重新对上焦了。便宜又有效的保养。" }, "effects": { "stamina": 3, "stress": -3, "mood": 2 } }
+      ]
+    },
+    {
+      "id": "pre_it_finally_clicks",
+      "title": { "en": "The First Time It Clicks", "zh": "第一次开窍" },
+      "stage": ["preclinical", "transition"],
+      "tags": ["lab", "handSkill", "confidence"],
+      "minSemester": 2,
+      "maxSemester": 6,
+      "weight": 10,
+      "text": { "en": "For weeks the bur felt like a stranger. Today, mid-cut, your hand just... knows the angle. No thinking. It clicks, quietly, and you almost tear up over a plastic molar.", "zh": "好几个星期了，车针一直像个陌生人。今天切到一半，你的手突然就……知道了那个角度。不用想。咔哒一下，你差点对着一颗塑料磨牙落泪。" },
+      "choices": [
+        { "id": "savor_it", "text": { "en": "Pause and let yourself feel it", "zh": "停一下，让自己好好感受一下" }, "resultText": { "en": "You earned this one. Confidence quietly upgrades to a real number.", "zh": "这个是你应得的。自信悄悄升级成了一个真实的数字。" }, "effects": { "confidence": 6, "mood": 4, "handSkill": 3 } },
+        { "id": "lock_it_in", "text": { "en": "Immediately repeat it to lock it in", "zh": "马上再做一遍，把手感固定住" }, "resultText": { "en": "Three clean reps in a row. The muscle memory is now actually yours.", "zh": "连续三个干净的动作。肌肉记忆现在是真正属于你的了。" }, "effects": { "handSkill": 7, "stamina": -4, "confidence": 3 } },
+        { "id": "share_partner", "text": { "en": "Call {partner} from the hallway", "zh": "跑到走廊给 {partner} 打个电话" }, "resultText": { "en": "{partner} doesn't fully get the bur angle, but cheers anyway. That helps more than the angle did.", "zh": "{partner} 其实没完全听懂那个车针角度，但还是给你欢呼。这比那个角度还管用。" }, "effects": { "mood": 5, "love": 4, "confidence": 2 } }
+      ]
+    },
+    {
+      "id": "pre_typodont_swap",
+      "title": { "en": "The Typodont Mix-Up", "zh": "假牙模型搞错了" },
+      "stage": ["preclinical", "transition"],
+      "tags": ["lab", "stress", "handSkill"],
+      "minSemester": 2,
+      "maxSemester": 6,
+      "weight": 9,
+      "text": { "en": "Halfway through you realize the typodont on your bench isn't yours, and the missing tooth slot means you've been prepping the wrong number entirely.", "zh": "做到一半你才发现，台上这副假牙模型不是你的，缺牙的位置说明你一直在预备完全错误的那颗牙。" },
+      "choices": [
+        { "id": "swap_calmly", "text": { "en": "Calmly swap and restart on yours", "zh": "冷静地换回自己的，重新开始" }, "resultText": { "en": "Annoying, but you keep the practice and lose only some time.", "zh": "挺烦的，但练习没白费，只是损失了点时间。" }, "effects": { "handSkill": 3, "stress": 2, "stamina": -2 } },
+        { "id": "tell_owner", "text": { "en": "Track down whose it is and apologize", "zh": "找出是谁的，去道个歉" }, "resultText": { "en": "Turns out they had yours too. You both laugh; goodwill restored.", "zh": "结果对方也拿了你的。两人一起笑了，关系反而更好了。" }, "effects": { "reputation": 3, "mood": 2, "stress": -1 } },
+        { "id": "panic_quietly", "text": { "en": "Panic quietly for a minute first", "zh": "先默默崩溃一分钟" }, "resultText": { "en": "The panic changes nothing, but it does cost you a minute.", "zh": "崩溃啥也没改变，倒是花了你一分钟。" }, "effects": { "stress": 3, "mood": -1 } }
+      ]
+    },
+    {
+      "id": "pre_labmate_struggling",
+      "title": { "en": "The Labmate Who's Stuck", "zh": "卡住的同学" },
+      "stage": ["preclinical", "transition"],
+      "tags": ["lab", "confidence", "stress"],
+      "minSemester": 2,
+      "maxSemester": 6,
+      "weight": 9,
+      "text": { "en": "The student next to you keeps fracturing their wax margin and is one sigh away from giving up. You actually know the fix for this one.", "zh": "你旁边的同学蜡型边缘老是崩，再叹一口气就要放弃了。这个问题你正好知道怎么解决。" },
+      "choices": [
+        { "id": "help_them", "text": { "en": "Stop and show them your trick", "zh": "停下来，教他们你的小窍门" }, "resultText": { "en": "Teaching it locks it in for you too, and they breathe again.", "zh": "教别人的过程也帮你巩固了，而对方终于能喘口气了。" }, "effects": { "knowledge": 3, "reputation": 4, "empathy": 3, "handSkill": -1 } },
+        { "id": "stay_focused", "text": { "en": "Stay focused on your own deadline", "zh": "专注于自己的截止时间" }, "resultText": { "en": "You finish on time, but a small guilty pang lingers.", "zh": "你按时做完了，但心里有点小小的过意不去。" }, "effects": { "handSkill": 4, "mood": -2, "stress": -1 } },
+        { "id": "quick_tip", "text": { "en": "Give one quick tip, then keep going", "zh": "给一句快速提示，然后继续干活" }, "resultText": { "en": "A balanced move: they get unstuck, you barely lose a minute.", "zh": "一个平衡的选择：他们脱困了，你也几乎没耽误时间。" }, "effects": { "empathy": 2, "reputation": 2, "handSkill": 2 } }
+      ]
+    }
+  ]
+}

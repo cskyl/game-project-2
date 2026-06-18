@@ -1,0 +1,146 @@
+{
+  "events": [
+    {
+      "id": "well_burnout_warning",
+      "title": { "en": "The Low-Battery Warning", "zh": "电量告急提醒" },
+      "stage": ["any"],
+      "tags": ["wellness", "crisis"],
+      "weight": 11,
+      "condition": { "maxStats": { "mood": 30 } },
+      "text": { "en": "You've been running like a browser with 80 tabs open, and the fan is screaming. Everything still works, technically, but you can feel the whole system getting warm.", "zh": "你最近像开了 80 个标签页的浏览器，风扇嗡嗡狂转。东西勉强还能跑，但你能感觉到整个系统都在发烫。" },
+      "choices": [
+        { "id": "well_burnout_close_tabs", "text": { "en": "Close some tabs and breathe", "zh": "关掉几个标签页，喘口气" }, "resultText": { "en": "You cut your to-do list in half and go to bed early. Tomorrow-you sends a thank-you note.", "zh": "你把待办清单砍掉一半，早早睡了。明天的你给今天的你发来感谢信。" }, "effects": { "stress": -10, "stamina": 8, "mood": 6, "knowledge": -2 } },
+        { "id": "well_burnout_push", "text": { "en": "Push through, sleep is for graduates", "zh": "硬撑，等毕业再睡" }, "resultText": { "en": "You squeeze out a few more hours of studying. The notes blur together and your patience does too.", "zh": "你又硬挤出几个小时复习。笔记糊成一团，耐心也一起糊了。" }, "effects": { "knowledge": 4, "stress": 10, "stamina": -8, "mood": -5 } },
+        { "id": "well_burnout_walk", "text": { "en": "Take a short walk outside", "zh": "出门走一小圈" }, "resultText": { "en": "Fresh air, no agenda. Your brain quietly reboots and the fan stops screaming.", "zh": "新鲜空气，没有任务。脑子悄悄重启，风扇终于不叫了。" }, "effects": { "stress": -7, "stamina": 4, "mood": 5 } }
+      ]
+    },
+    {
+      "id": "well_cant_sleep",
+      "title": { "en": "2 A.M. Ceiling Inspection", "zh": "凌晨两点检查天花板" },
+      "stage": ["any"],
+      "tags": ["wellness", "crisis"],
+      "weight": 10,
+      "condition": { "minStats": { "stress": 70 } },
+      "text": { "en": "It's 2 a.m. and your brain is hosting an unscheduled review session on every embarrassing thing you've ever done. The ceiling has no answers, but you keep checking.", "zh": "凌晨两点，你的大脑临时召开了一场复盘大会，主题是你这辈子所有的尴尬时刻。天花板给不出答案，你却一直盯着它看。" },
+      "choices": [
+        { "id": "well_sleep_winddown", "text": { "en": "Phone down, boring podcast on", "zh": "放下手机，听个无聊播客" }, "resultText": { "en": "You stop scrolling and let a dull voice talk about soil for ten minutes. You're out before it gets to clay.", "zh": "你不刷手机了，听一个无聊的声音讲了十分钟土壤。还没讲到黏土你就睡着了。" }, "effects": { "stress": -8, "stamina": 7, "mood": 4 } },
+        { "id": "well_sleep_study", "text": { "en": "Might as well study then", "zh": "睡不着不如复习" }, "resultText": { "en": "You learn three facts and lose two hours of sleep. Math says this was a bad trade.", "zh": "你学到了三个知识点，损失了两小时睡眠。算下来这笔买卖很亏。" }, "effects": { "knowledge": 3, "stress": 6, "stamina": -9 } },
+        { "id": "well_sleep_tea", "text": { "en": "Warm drink, lights low", "zh": "热饮一杯，把灯调暗" }, "resultText": { "en": "Something warm, no screens, low light. The 2 a.m. review session is adjourned without a vote.", "zh": "来点热的，不看屏幕，灯光放暗。凌晨的复盘大会无人表决，自动散会。" }, "effects": { "stress": -6, "stamina": 5, "mood": 3 } },
+        { "id": "well_sleep_text", "text": { "en": "Text {partner} you can't sleep", "zh": "给{partner}发消息说睡不着" }, "resultText": { "en": "{partner} replies with a single sleepy thumbs-up and a typo'd 'goodnihgt'. Somehow it helps.", "zh": "{partner}回了个睡眼惺忪的赞，还把'晚安'打成了'晚安安'。莫名其妙地，你就安心了。" }, "effects": { "stress": -7, "mood": 6, "love": 4, "stamina": 3 } }
+      ]
+    },
+    {
+      "id": "well_imposter_syndrome",
+      "title": { "en": "The Fraud Squad Meeting", "zh": "冒牌者协会例会" },
+      "stage": ["any"],
+      "tags": ["wellness", "crisis"],
+      "weight": 10,
+      "condition": { "maxStats": { "confidence": 30 } },
+      "text": { "en": "A small voice insists everyone else got into dental school on merit and you got in by clerical error. The voice is very confident for someone with no evidence.", "zh": "脑子里有个小声音坚称，别人考上牙学院靠的是实力，而你纯属系统出 bug 录错了。这声音明明没证据，却特别自信。" },
+      "choices": [
+        { "id": "well_imposter_evidence", "text": { "en": "List things you actually got right", "zh": "列一列你真做对的事" }, "resultText": { "en": "You write down three things you nailed this week. Turns out the clerical-error theory has holes.", "zh": "你写下本周做成的三件事。结果发现'系统录错'这个理论漏洞百出。" }, "effects": { "confidence": 8, "mood": 5, "stress": -4 } },
+        { "id": "well_imposter_spiral", "text": { "en": "Reread your worst exam to confirm", "zh": "重看最烂的那次考卷确认一下" }, "resultText": { "en": "You go looking for proof you're a fraud and, shockingly, find some. The voice high-fives itself.", "zh": "你专门去找自己是冒牌货的证据，居然真找到了。那个小声音得意地给自己鼓掌。" }, "effects": { "confidence": -7, "mood": -6, "stress": 8 } },
+        { "id": "well_imposter_talk", "text": { "en": "Tell a classmate the secret thought", "zh": "把这个秘密想法告诉同学" }, "resultText": { "en": "Your classmate whispers 'wait, you too?!' Turns out the whole cohort is in the Fraud Squad.", "zh": "同学小声说'啊你也是？！'原来整个年级都是冒牌者协会会员。" }, "effects": { "confidence": 6, "mood": 6, "reputation": 2, "stress": -5 } }
+      ]
+    },
+    {
+      "id": "well_comparison_spiral",
+      "title": { "en": "The Scroll of Comparison", "zh": "比较的无底洞" },
+      "stage": ["any"],
+      "tags": ["wellness", "crisis"],
+      "weight": 10,
+      "condition": { "maxStats": { "mood": 35 } },
+      "text": { "en": "Everyone online is publishing papers, prepping flawless crowns, and apparently sleeping eight hours. You are eating cereal over the sink, comparing your blooper reel to their highlight reel.", "zh": "网上每个人都在发论文、做完美牙冠，还顺便睡满八小时。而你站在水池边吃麦片，拿自己的 NG 花絮去比别人的高光集锦。" },
+      "choices": [
+        { "id": "well_compare_logoff", "text": { "en": "Log off, run your own race", "zh": "下线，跑自己的赛道" }, "resultText": { "en": "You close the app and finish your cereal in peace. Your race has exactly one runner and that's the point.", "zh": "你关掉 app，安安静静吃完麦片。你的赛道只有一个选手，这正是重点。" }, "effects": { "stress": -8, "mood": 7, "confidence": 4 } },
+        { "id": "well_compare_chase", "text": { "en": "Try to match all of them at once", "zh": "试图一口气追平所有人" }, "resultText": { "en": "You start five new ambitious projects at midnight. By 1 a.m. you've finished zero and feel worse.", "zh": "你半夜雄心勃勃地同时开了五个新项目。到凌晨一点，一个没完成，心情更差了。" }, "effects": { "stress": 10, "stamina": -7, "mood": -6, "knowledge": 2 } },
+        { "id": "well_compare_one_thing", "text": { "en": "Pick one tiny real goal for tomorrow", "zh": "给明天定一个超小的真目标" }, "resultText": { "en": "You write down one doable thing for tomorrow. Small, specific, suspiciously mature, surprisingly effective.", "zh": "你给明天写下一件做得到的小事。又小又具体，意外地成熟，效果好得出奇。" }, "effects": { "mood": 5, "confidence": 5, "stress": -4, "knowledge": 2 } }
+      ]
+    },
+    {
+      "id": "well_skipped_meals",
+      "title": { "en": "Running on Coffee and Vibes", "zh": "全靠咖啡和氛围运行" },
+      "stage": ["any"],
+      "tags": ["wellness", "crisis"],
+      "weight": 10,
+      "condition": { "maxStats": { "stamina": 30 } },
+      "text": { "en": "You realize your last real meal was a granola bar at an hour you'd rather not name. Your stomach files a formal complaint mid-lecture.", "zh": "你猛然想起，上一顿正经饭是一根能量棒，吃的时间点你都不好意思说。讲座讲到一半，你的胃正式提交了投诉。" },
+      "choices": [
+        { "id": "well_meal_real_food", "text": { "en": "Go eat an actual meal", "zh": "去吃一顿正经饭" }, "resultText": { "en": "Warm food, sitting down, no notes. Your brain comes back online with a friendly ping.", "zh": "热乎的饭，坐下来吃，不看笔记。脑子'叮'一声友好地重新上线了。" }, "effects": { "stamina": 9, "mood": 6, "stress": -5, "money": -3 } },
+        { "id": "well_meal_coffee", "text": { "en": "Just get another coffee", "zh": "再来一杯咖啡顶着" }, "resultText": { "en": "Cup number four arrives. You're now vibrating at a frequency only dogs can study with.", "zh": "第四杯咖啡到位。你现在以一种只有狗能跟着复习的频率在抖。" }, "effects": { "stamina": -3, "stress": 6, "mood": -2, "money": -2 } },
+        { "id": "well_meal_snack_share", "text": { "en": "Split snacks with a study buddy", "zh": "和学伴分享点零食" }, "resultText": { "en": "You trade half a sandwich for half of theirs and a much-needed laugh. Calories and friendship, restored.", "zh": "你用半个三明治换了对方半个，外加一阵急需的大笑。热量和友谊，双双回血。" }, "effects": { "stamina": 6, "mood": 5, "reputation": 2, "stress": -3 } }
+      ]
+    },
+    {
+      "id": "well_preexam_anxiety",
+      "title": { "en": "The Night-Before Jitters", "zh": "考前一夜的心跳" },
+      "stage": ["any"],
+      "tags": ["wellness", "crisis"],
+      "weight": 11,
+      "condition": { "minStats": { "stress": 65 } },
+      "text": { "en": "The exam is tomorrow and your heart is auditioning for a drum solo. You know the material; your nervous system did not get the memo.", "zh": "明天就考试了，你的心脏正在试镜一段架子鼓 solo。知识你都会了，可你的神经系统没收到这条通知。" },
+      "choices": [
+        { "id": "well_exam_breathe", "text": { "en": "Do a slow breathing round, then sleep", "zh": "做几轮慢呼吸，然后睡觉" }, "resultText": { "en": "Four slow breaths, lights off. The drum solo fades to a calm steady beat. The tooth can wait; your nervous system cannot.", "zh": "四次缓慢呼吸，关灯。架子鼓 solo 渐渐变成平稳的心跳。牙可以等，你的神经系统不能等。" }, "effects": { "stress": -9, "stamina": 6, "confidence": 4, "mood": 4 } },
+        { "id": "well_exam_cram", "text": { "en": "Cram the whole syllabus one more time", "zh": "把整本大纲再啃一遍" }, "resultText": { "en": "You re-read everything at panic speed and absorb almost none of it. Now you're tired AND jittery.", "zh": "你以恐慌的速度把所有东西又过了一遍，几乎啥也没进脑子。现在你又累又抖。" }, "effects": { "knowledge": 3, "stress": 9, "stamina": -8, "confidence": -3 } },
+        { "id": "well_exam_light_review", "text": { "en": "Skim your one-page cheat-summary", "zh": "扫一遍自己的一页纸总结" }, "resultText": { "en": "You glance over the highlights you already made, nod, and call it. Confident enough, rested enough.", "zh": "你扫一眼自己早就划好的重点，点点头，收工。自信够了，休息也够了。" }, "effects": { "knowledge": 2, "confidence": 5, "stress": -4, "stamina": 2 } },
+        { "id": "well_exam_partner_quiz", "text": { "en": "Let {partner} quiz you for ten minutes", "zh": "让{partner}考你十分钟" }, "resultText": { "en": "{partner} reads questions in a dramatic game-show voice and gets every dental term hilariously wrong. You laugh, you remember, you relax.", "zh": "{partner}用夸张的综艺主持人语气念题，每个牙科术语都念得离谱搞笑。你笑了，记住了，也放松了。" }, "effects": { "stress": -6, "confidence": 5, "mood": 6, "love": 4, "knowledge": 2 } }
+      ]
+    },
+    {
+      "id": "well_recovery_day",
+      "title": { "en": "The 'I Have Nothing Left' Day", "zh": "'我真的没电了'的一天" },
+      "stage": ["any"],
+      "tags": ["wellness", "crisis"],
+      "weight": 10,
+      "condition": { "maxStats": { "stamina": 25 } },
+      "text": { "en": "You wake up and the tank reads empty. Not lazy-empty, actually-empty. Your body is gently filing for one day of mercy.", "zh": "你一觉醒来，发现油箱见底了。不是偷懒的那种空，是真的空。你的身体正温柔地申请放它一天假。" },
+      "choices": [
+        { "id": "well_recover_rest", "text": { "en": "Take the recovery day, guilt-free", "zh": "心安理得地休一天" }, "resultText": { "en": "You rest on purpose, not by accident. By evening the tank reads a hopeful quarter-full.", "zh": "你是有意休息，不是不小心垮掉。到傍晚，油箱回到了充满希望的四分之一格。" }, "effects": { "stamina": 12, "stress": -8, "mood": 7, "knowledge": -2 } },
+        { "id": "well_recover_force", "text": { "en": "Force a full study day anyway", "zh": "还是逼自己学满一整天" }, "resultText": { "en": "You drag yourself through the day at 20% efficiency and end up needing two recovery days instead.", "zh": "你拖着自己以 20% 的效率熬过一天，结果反而欠下了两天的恢复假。" }, "effects": { "knowledge": 2, "stamina": -9, "stress": 9, "mood": -6 } },
+        { "id": "well_recover_half", "text": { "en": "Do one easy task, then truly stop", "zh": "做一件轻松小事，然后彻底收工" }, "resultText": { "en": "You handle one gentle thing, feel a little accomplished, then close the laptop for real. Balanced and humane.", "zh": "你搞定一件不费劲的小事，有点成就感，然后真的合上电脑。既平衡又人道。" }, "effects": { "stamina": 7, "mood": 5, "stress": -5, "knowledge": 1 } }
+      ]
+    },
+    {
+      "id": "well_talk_to_counselor",
+      "title": { "en": "Talking to Someone Who Gets It", "zh": "找个懂你的人聊聊" },
+      "stage": ["any"],
+      "tags": ["wellness", "crisis"],
+      "weight": 10,
+      "condition": { "maxStats": { "mood": 30 } },
+      "text": { "en": "There's a counselor on campus who has heard 'I'm fine' said in that exact tired voice a thousand times. A friend nudges you to actually book the appointment.", "zh": "校园里有位辅导员，听过一千遍用那种疲惫语气说出的'我没事'。一个朋友轻轻推了你一把，让你真的去预约。" },
+      "choices": [
+        { "id": "well_counselor_go", "text": { "en": "Book it and actually go", "zh": "预约，并且真的去" }, "resultText": { "en": "You say the quiet stuff out loud to someone trained to listen. Nothing magic, just lighter shoulders walking out.", "zh": "你把憋在心里的话，对一个受过训练的倾听者说了出来。没什么魔法，只是走出门时肩膀轻了不少。" }, "effects": { "stress": -10, "mood": 8, "confidence": 4 } },
+        { "id": "well_counselor_later", "text": { "en": "Tell yourself you'll go 'later'", "zh": "告诉自己'以后'再去" }, "resultText": { "en": "You file it under Later, the folder where good intentions go to nap. The feeling stays put.", "zh": "你把它归进'以后再说'文件夹——那是好意去打盹的地方。那股情绪原地没动。" }, "effects": { "stress": 4, "mood": -3 } },
+        { "id": "well_counselor_friend", "text": { "en": "Talk to a trusted friend first", "zh": "先找个信得过的朋友聊聊" }, "resultText": { "en": "A long honest chat with a friend over bad cafeteria tea. Less clinical, still real, genuinely helps.", "zh": "和朋友就着难喝的食堂奶茶聊了好久，全是真心话。没那么专业，但很真实，确实管用。" }, "effects": { "stress": -7, "mood": 6, "reputation": 2 } }
+      ]
+    },
+    {
+      "id": "well_perspective_reset",
+      "title": { "en": "Zooming Out", "zh": "把镜头拉远一点" },
+      "stage": ["any"],
+      "tags": ["wellness", "crisis"],
+      "weight": 9,
+      "condition": { "maxStats": { "confidence": 35 } },
+      "text": { "en": "One bad lab session has somehow become 'I will never be a good dentist and also probably bad at everything.' The catastrophe machine is running overtime again.", "zh": "一次失手的 sim lab，不知怎么就升级成了'我永远当不好牙医，而且大概干啥都不行'。灾难放大机又在加班了。" },
+      "choices": [
+        { "id": "well_perspective_zoom", "text": { "en": "Ask: will this matter in a year?", "zh": "问自己：一年后这还重要吗？" }, "resultText": { "en": "You zoom out. One wobbly afternoon does not define a career. The catastrophe machine powers down.", "zh": "你把镜头拉远。一个手抖的下午，定义不了一整个职业生涯。灾难放大机自动关机。" }, "effects": { "confidence": 6, "stress": -7, "mood": 6 } },
+        { "id": "well_perspective_dwell", "text": { "en": "Replay the mistake on loop", "zh": "把失误循环播放" }, "resultText": { "en": "You watch the highlight (lowlight?) reel forty times. Spoiler: it does not improve with rewatching.", "zh": "你把那段'高光'(低谷？)集锦看了四十遍。剧透：重看四十遍也不会变好。" }, "effects": { "confidence": -6, "stress": 8, "mood": -5 } },
+        { "id": "well_perspective_data", "text": { "en": "Count how many things went fine today", "zh": "数数今天有多少事是顺的" }, "resultText": { "en": "You tally the day honestly: one rough lab, eleven ordinary fine things. The ratio is reassuring.", "zh": "你诚实地把一天盘了盘：一次手抖的 lab，十一件普普通通搞定的事。这个比例还挺安慰人。" }, "effects": { "confidence": 5, "mood": 4, "stress": -4, "clinicalSense": 2 } }
+      ]
+    },
+    {
+      "id": "well_recovery_week",
+      "title": { "en": "Permission to Rest, Granted", "zh": "已批准：你可以休息了" },
+      "stage": ["any"],
+      "tags": ["wellness", "crisis"],
+      "weight": 100,
+      "condition": { "maxStats": { "stamina": 15 } },
+      "text": { "en": "Your body has stopped asking nicely. This is the part of the story where you take a real recovery week, and no, you don't have to earn it first.", "zh": "你的身体已经不再客气地请求了。故事走到了这一段：你要真正休一个恢复周——不用，你不需要先'配得上'它。" },
+      "choices": [
+        { "id": "well_rweek_accept", "text": { "en": "Accept the recovery week fully", "zh": "踏踏实实接受这个恢复周" }, "resultText": { "en": "You sleep, eat, walk, and let the textbooks gather a little honest dust. You come back actually able to think again.", "zh": "你睡觉、吃饭、散步，让课本踏踏实实落点灰。回来时，你真的又能好好思考了。" }, "effects": { "stamina": 15, "stress": -12, "mood": 10, "confidence": 4, "knowledge": -3 } },
+        { "id": "well_rweek_sneak", "text": { "en": "Sneak in 'just a little' studying", "zh": "偷偷'就学一点点'" }, "resultText": { "en": "Your 'little' study session quietly eats the whole week. The rest you needed remains theoretical.", "zh": "你那'一点点'复习悄悄吞掉了整整一周。你真正需要的休息，依然停留在理论层面。" }, "effects": { "knowledge": 3, "stamina": -4, "stress": 6, "mood": -4 } },
+        { "id": "well_rweek_gentle", "text": { "en": "Rest mostly, plan softly for next week", "zh": "主要休息，顺手轻轻规划下周" }, "resultText": { "en": "You rest for real and spend twenty calm minutes sketching next week. Recovered and quietly ready.", "zh": "你真正休息，再花二十分钟平静地勾画下周的安排。既恢复了，又悄悄做好了准备。" }, "effects": { "stamina": 11, "stress": -8, "mood": 7, "confidence": 3 } }
+      ]
+    }
+  ]
+}
