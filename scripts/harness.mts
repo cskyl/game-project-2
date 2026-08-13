@@ -8,8 +8,13 @@ import {
 } from "../src/data/electives";
 import { ENDINGS } from "../src/data/endings";
 import { EVENTS } from "../src/data/events";
+import {
+  RESEARCH_EVENTS,
+  RESEARCH_LABS,
+  RESEARCH_PROJECT_TEMPLATES,
+} from "../src/data/research";
 import { SEMESTERS } from "../src/data/semesters";
-import { careerReadiness, evaluateCondition } from "../src/game/balance";
+import { careerReadiness, evaluateCondition, getStat } from "../src/game/balance";
 import {
   ALL_STATS,
   BREAK_ACTIONS_PER_CHAPTER,
@@ -20,21 +25,28 @@ import {
 } from "../src/game/constants";
 import {
   actionStatus,
+  abandonResearchProject,
   advanceAfterBoss,
   beginSemester,
   chooseAction,
   chooseBreakTrack,
   chooseElective,
+  closeResearchDashboard,
   continueAfterEvent,
   continueAfterWeeklySummary,
   finishWeek,
+  joinResearchLab,
   newGame,
+  openResearchDashboard,
   playCard,
   resolveBoss,
   resolveEventChoice,
+  resubmitResearchProject,
+  selectActiveResearchProject,
+  startResearchProject,
   takeBreakAction,
 } from "../src/game/engine";
-import { getEnding, getPendingEvent } from "../src/game/selectors";
+import { getActions, getEnding, getPendingEvent } from "../src/game/selectors";
 import { migrateSave } from "../src/game/migration";
 import {
   applyActionHooks,
@@ -76,11 +88,13 @@ const CR_COMPONENT_STATS = [
 ] as const;
 
 type BotMode = "ordered" | "chaos" | "minmax";
+type ResearchStrategy = "focused" | "balanced" | "clinical-only" | "dabble";
 type Bot = {
   id: string;
   actions: string[];
   choiceOffset: number;
   mode?: BotMode;
+  researchStrategy: ResearchStrategy;
 };
 
 const BOTS: Bot[] = [
@@ -99,6 +113,7 @@ const BOTS: Bot[] = [
       "work",
     ],
     choiceOffset: 0,
+    researchStrategy: "balanced",
   },
   {
     id: "study-max",
@@ -111,6 +126,7 @@ const BOTS: Bot[] = [
       "small_break",
     ],
     choiceOffset: 1,
+    researchStrategy: "dabble",
   },
   {
     id: "hands-max",
@@ -123,6 +139,7 @@ const BOTS: Bot[] = [
       "patient_comm",
     ],
     choiceOffset: 2,
+    researchStrategy: "clinical-only",
   },
   {
     id: "research-max",
@@ -135,6 +152,7 @@ const BOTS: Bot[] = [
       "ask_help",
     ],
     choiceOffset: 0,
+    researchStrategy: "focused",
   },
   {
     id: "clinic-max",
@@ -147,6 +165,7 @@ const BOTS: Bot[] = [
       "sleep",
     ],
     choiceOffset: 1,
+    researchStrategy: "clinical-only",
   },
   {
     id: "social",
@@ -159,6 +178,7 @@ const BOTS: Bot[] = [
       "review_lecture",
     ],
     choiceOffset: 2,
+    researchStrategy: "dabble",
   },
   {
     id: "wellness",
@@ -171,6 +191,7 @@ const BOTS: Bot[] = [
       "review_lecture",
     ],
     choiceOffset: 0,
+    researchStrategy: "dabble",
   },
   {
     id: "money",
@@ -183,18 +204,21 @@ const BOTS: Bot[] = [
       "ask_help",
     ],
     choiceOffset: 1,
+    researchStrategy: "dabble",
   },
   {
     id: "chaos",
     actions: ACTIONS.map((action) => action.id),
     choiceOffset: 2,
     mode: "chaos",
+    researchStrategy: "dabble",
   },
   {
     id: "min-max-exploiter",
     actions: ACTIONS.map((action) => action.id),
     choiceOffset: 0,
     mode: "minmax",
+    researchStrategy: "dabble",
   },
 ];
 
@@ -210,7 +234,14 @@ type PlayerInput =
   | { type: "resolveBoss" }
   | { type: "advanceBoss" }
   | { type: "chooseBreakTrack"; id: string }
-  | { type: "breakAction"; id: string };
+  | { type: "breakAction"; id: string }
+  | { type: "openResearch" }
+  | { type: "closeResearch" }
+  | { type: "joinResearchLab"; id: string }
+  | { type: "startResearchProject"; id: string }
+  | { type: "selectResearchProject"; id: string }
+  | { type: "resubmitResearchProject"; id: string }
+  | { type: "abandonResearchProject"; id: string };
 
 type RunResult = {
   finalState: GameState;
@@ -221,6 +252,7 @@ type RunResult = {
   breakActionCounts: Record<number, number>;
   weeksSeen: string[];
   semesterOpenCount: number;
+  researchDashboardVisits: number;
 };
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -360,6 +392,25 @@ function pickBreakAction(state: GameState, bot: Bot): string {
   return track.actions[index].id;
 }
 
+function shouldVisitResearch(state: GameState, bot: Bot): boolean {
+  if (state.semesterIndex + 1 < 2 || bot.researchStrategy === "clinical-only") {
+    return false;
+  }
+  if (bot.researchStrategy === "focused") return true;
+  if (bot.researchStrategy === "balanced") {
+    return state.globalWeek % 5 === 1;
+  }
+  return false;
+}
+
+function nextProjectTemplate(state: GameState): string | undefined {
+  if (!state.research.labId) return undefined;
+  const used = new Set(state.research.projects.map((project) => project.templateId));
+  return RESEARCH_PROJECT_TEMPLATES.find(
+    (template) => template.labId === state.research.labId && !used.has(template.id),
+  )?.id;
+}
+
 function applyInput(state: GameState, input: PlayerInput): GameState {
   switch (input.type) {
     case "chooseElective":
@@ -386,6 +437,20 @@ function applyInput(state: GameState, input: PlayerInput): GameState {
       return chooseBreakTrack(state, input.id);
     case "breakAction":
       return takeBreakAction(state, input.id);
+    case "openResearch":
+      return openResearchDashboard(state);
+    case "closeResearch":
+      return closeResearchDashboard(state);
+    case "joinResearchLab":
+      return joinResearchLab(state, input.id);
+    case "startResearchProject":
+      return startResearchProject(state, input.id);
+    case "selectResearchProject":
+      return selectActiveResearchProject(state, input.id);
+    case "resubmitResearchProject":
+      return resubmitResearchProject(state, input.id);
+    case "abandonResearchProject":
+      return abandonResearchProject(state, input.id);
   }
 }
 
@@ -449,6 +514,8 @@ function playPrimary(bot: Bot, difficulty: Difficulty, seed: number): RunResult 
   const breakActionCounts: Record<number, number> = {};
   const weeksSeen = new Set<string>();
   let semesterOpenCount = 0;
+  let researchDashboardVisits = 0;
+  let lastResearchWeekVisited = -1;
 
   const apply = (input: PlayerInput) => {
     assert(trace.length < GUARD_LIMIT, `${bot.id}/${difficulty}/${seed}: guard hit`);
@@ -479,6 +546,14 @@ function playPrimary(bot: Bot, difficulty: Difficulty, seed: number): RunResult 
       }
       case "planning": {
         weeksSeen.add(`${state.semesterIndex + 1}:${state.weekInSemester}`);
+        if (
+          state.globalWeek !== lastResearchWeekVisited &&
+          shouldVisitResearch(state, bot)
+        ) {
+          lastResearchWeekVisited = state.globalWeek;
+          apply({ type: "openResearch" });
+          break;
+        }
         let actionTurn = 0;
         while (state.actionPointsRemaining > 0) {
           const actionId = pickAction(state, bot, actionTurn);
@@ -497,6 +572,78 @@ function playPrimary(bot: Bot, difficulty: Difficulty, seed: number): RunResult 
           if (state.cardsPlayedThisWeek <= before) break;
         }
         apply({ type: "finishWeek" });
+        break;
+      }
+      case "researchDashboard": {
+        researchDashboardVisits += 1;
+        const label = `${bot.id}/${difficulty}/${seed}:research`;
+        if (!state.research.labId) {
+          const offeredLab = state.research.labOffers[0];
+          if (offeredLab) {
+            apply({ type: "joinResearchLab", id: offeredLab });
+            assert(state.research.labId === offeredLab, `${label}: offered lab did not join`);
+          } else {
+            const before = state.research.reputationInLab;
+            const apBefore = state.actionPointsRemaining;
+            apply({ type: "action", id: "research_interest" });
+            if (state.actionPointsRemaining < apBefore) {
+              actionCounts.research_interest =
+                (actionCounts.research_interest ?? 0) + 1;
+            }
+            assert(
+              state.research.reputationInLab > before || state.actionPointsRemaining < 1,
+              `${label}: usable research interest did not build PI trust`,
+            );
+          }
+          apply({ type: "closeResearch" });
+          break;
+        }
+
+        const rejected = state.research.projects.find(
+          (project) => project.phase === "rejected",
+        );
+        if (rejected) {
+          apply({ type: "resubmitResearchProject", id: rejected.id });
+        }
+
+        let active = state.research.projects.find(
+          (project) => project.id === state.research.activeProjectId,
+        );
+        if (!active || active.phase === "accepted" || active.phase === "abandoned") {
+          const existing = state.research.projects.find(
+            (project) =>
+              project.phase !== "accepted" &&
+              project.phase !== "abandoned" &&
+              project.phase !== "rejected",
+          );
+          if (existing) {
+            apply({ type: "selectResearchProject", id: existing.id });
+          } else {
+            const templateId = nextProjectTemplate(state);
+            if (templateId) apply({ type: "startResearchProject", id: templateId });
+          }
+          active = state.research.projects.find(
+            (project) => project.id === state.research.activeProjectId,
+          );
+        }
+
+        if (
+          active &&
+          active.phase !== "submitted" &&
+          active.phase !== "rejected" &&
+          state.actionPointsRemaining >= 2
+        ) {
+          const before = state.actionPointsRemaining;
+          apply({ type: "action", id: "lab_work" });
+          if (state.actionPointsRemaining < before) {
+            assert(
+              state.actionPointsRemaining === before - 2,
+              `${label}: lab work spent ${before - state.actionPointsRemaining} AP instead of 2`,
+            );
+            actionCounts.lab_work = (actionCounts.lab_work ?? 0) + 1;
+          }
+        }
+        apply({ type: "closeResearch" });
         break;
       }
       case "event": {
@@ -601,6 +748,20 @@ function playPrimary(bot: Bot, difficulty: Difficulty, seed: number): RunResult 
       `${bot.id}/${difficulty}/${seed}: break after semester ${afterSemester} expected ${BREAK_ACTIONS_PER_CHAPTER} actions, got ${breakActionCounts[afterSemester] ?? 0}`,
     );
   }
+  if (bot.researchStrategy === "focused") {
+    assert(
+      researchDashboardVisits > 0 && Boolean(state.research.labId),
+      `${bot.id}/${difficulty}/${seed}: focused strategy never joined a lab`,
+    );
+    assert(
+      state.research.projects.length > 0 && state.research.activity.length > 0,
+      `${bot.id}/${difficulty}/${seed}: focused strategy produced no visible project/activity history`,
+    );
+    assert(
+      state.research.activity.some((activity) => Boolean(activity.roll)),
+      `${bot.id}/${difficulty}/${seed}: focused strategy exposed no research roll breakdown`,
+    );
+  }
   assert(getEnding(state)?.id, `${bot.id}/${difficulty}/${seed}: missing ending`);
   return {
     finalState: state,
@@ -611,6 +772,7 @@ function playPrimary(bot: Bot, difficulty: Difficulty, seed: number): RunResult 
     breakActionCounts,
     weeksSeen: [...weeksSeen],
     semesterOpenCount,
+    researchDashboardVisits,
   };
 }
 
@@ -661,11 +823,23 @@ function contentChecks(): void {
     ["action", ACTIONS.map((item) => item.id)],
     ["elective", ELECTIVES.map((item) => item.id)],
     ["break track", BREAK_TRACKS.map((item) => item.id)],
+    ["research lab", RESEARCH_LABS.map((item) => item.id)],
+    ["research project", RESEARCH_PROJECT_TEMPLATES.map((item) => item.id)],
+    ["research event", RESEARCH_EVENTS.map((item) => item.id)],
   ] as const) {
     assert(new Set(ids).size === ids.length, `duplicate ${label} id`);
   }
   assert(ELECTIVES.length === 14, `expected 14 electives, got ${ELECTIVES.length}`);
   assert(BREAK_TRACKS.length === 5, `expected 5 break tracks, got ${BREAK_TRACKS.length}`);
+  assert(RESEARCH_LABS.length === 4, `expected 4 research labs, got ${RESEARCH_LABS.length}`);
+  assert(
+    RESEARCH_PROJECT_TEMPLATES.length === 10,
+    `expected 10 research projects, got ${RESEARCH_PROJECT_TEMPLATES.length}`,
+  );
+  assert(
+    RESEARCH_EVENTS.length === 24,
+    `expected 24 authored research events, got ${RESEARCH_EVENTS.length}`,
+  );
   assert(
     BREAK_TRACKS.every(
       (track) => track.actions.length === BREAK_ACTIONS_PER_CHAPTER,
@@ -870,6 +1044,185 @@ function foundationChecks(): void {
     takeBreakAction(invalidBreakState, "not_a_break_action") === invalidBreakState,
     "P2 break action changed state before selecting a track",
   );
+
+  const planningProbe = beginSemester(
+    chooseElective(unopened, unopened.electiveOffers[0]),
+  );
+  assert(planningProbe.screen === "planning", "P3 screen-contract probe did not reach planning");
+  const interestAction = ACTIONS_BY_ID.get("research_interest");
+  const labWorkAction = ACTIONS_BY_ID.get("lab_work");
+  const ordinaryAction = ACTIONS_BY_ID.get("small_break");
+  assert(interestAction && labWorkAction && ordinaryAction, "P3 action-contract probe missing actions");
+  assert(
+    !getActions(planningProbe).some(
+      (action) => action.id === "research_interest" || action.id === "lab_work",
+    ),
+    "P3 planning action grid exposed dashboard-only research verbs",
+  );
+  assert(
+    chooseAction(planningProbe, "research_interest") === planningProbe &&
+      chooseAction(planningProbe, "lab_work") === planningProbe,
+    "P3 planning accepted a dashboard-only research action",
+  );
+  assert(
+    !actionStatus(interestAction, planningProbe).usable &&
+      !actionStatus(labWorkAction, planningProbe).usable,
+    "P3 planning actionStatus marked a research action usable",
+  );
+  const dashboardProbe = openResearchDashboard(planningProbe);
+  assert(dashboardProbe.screen === "researchDashboard", "P3 dashboard did not open from planning");
+  assert(
+    getActions(dashboardProbe).every(
+      (action) => action.id === "research_interest" || action.id === "lab_work",
+    ),
+    "P3 dashboard action selector exposed an ordinary planning verb",
+  );
+  assert(
+    chooseAction(dashboardProbe, ordinaryAction.id) === dashboardProbe &&
+      playCard(dashboardProbe, dashboardProbe.weeklyCards[0]) === dashboardProbe &&
+      finishWeek(dashboardProbe) === dashboardProbe,
+    "P3 dashboard allowed an ordinary action, card, or week resolution",
+  );
+  assert(
+    !actionStatus(ordinaryAction, dashboardProbe).usable,
+    "P3 dashboard actionStatus marked an ordinary action usable",
+  );
+
+  const summerBase: GameState = {
+    ...dashboardProbe,
+    screen: "breakChapter",
+    semesterIndex: 1,
+    pendingBreakId: "summer_research",
+    breakTurn: 0,
+    research: {
+      ...dashboardProbe.research,
+      labId: "reyes_biomaterials",
+      activeProjectId: "summer_probe",
+      reputationInLab: 40,
+      projects: [
+        {
+          id: "summer_probe",
+          templateId: "bond_aging_cycles",
+          title: { en: "Summer probe", zh: "暑期探针" },
+          phase: "idea",
+          progress: 0,
+          quality: 50,
+          weeksInPhase: 0,
+          risk: 0.12,
+          stallWeeksRemaining: 0,
+          submissionCount: 0,
+          resubmissions: 0,
+        },
+      ],
+    },
+  };
+  assert(
+    takeBreakAction(summerBase, "summer_research_hack") === summerBase,
+    "P3 invalid prefixed summer-research action changed pipeline state",
+  );
+  const summerProgressed = takeBreakAction(
+    summerBase,
+    "summer_research_protocol",
+  );
+  assert(
+    summerProgressed.research.projects[0].progress > 0 &&
+      summerProgressed.research.reputationInLab >
+        summerBase.research.reputationInLab &&
+      summerProgressed.research.activity.some(
+        (activity) => activity.projectId === "summer_probe",
+      ),
+    "P3 Summer Research break did not visibly advance active project and lab trust",
+  );
+  const summerOutputBase: GameState = {
+    ...summerBase,
+    research: {
+      ...summerBase.research,
+      projects: [
+        {
+          ...summerBase.research.projects[0],
+          phase: "writing",
+          progress: 80,
+          quality: 58,
+        },
+      ],
+    },
+  };
+  const summerOutput = takeBreakAction(
+    summerOutputBase,
+    "summer_research_bench",
+  );
+  assert(
+    summerOutput.research.projects[0].phase === "submitted" &&
+      summerOutput.research.posters === summerOutputBase.research.posters + 1 &&
+      summerOutput.research.activity.some(
+        (activity) => activity.kind === "poster",
+      ),
+    "P3 Summer Research crossing writing did not use submission/poster pipeline",
+  );
+
+  const queuedParked = {
+    ...summerBase.research.projects[0],
+    id: "queued_parked",
+    templateId: "bioactive_liner_pilot",
+    title: { en: "Queued parked", zh: "待切换项目" },
+  };
+  const queuedRejected = {
+    ...summerBase.research.projects[0],
+    id: "queued_rejected",
+    templateId: "printed_denture_accuracy",
+    title: { en: "Queued rejected", zh: "待转投项目" },
+    phase: "rejected" as const,
+    venue: "regional" as const,
+  };
+  const queuedBase: GameState = {
+    ...summerBase,
+    screen: "researchDashboard",
+    research: {
+      ...summerBase.research,
+      researchPoints: 20,
+      projects: [
+        ...summerBase.research.projects,
+        queuedParked,
+        queuedRejected,
+      ],
+    },
+  };
+  assert(
+    startResearchProject(queuedBase, "printed_denture_accuracy") === queuedBase &&
+      selectActiveResearchProject(queuedBase, queuedParked.id) === queuedBase &&
+      resubmitResearchProject(queuedBase, queuedRejected.id) === queuedBase &&
+      abandonResearchProject(queuedBase, "summer_probe") === queuedBase,
+    "P3 queued effort could be redirected by starting, switching, resubmitting, or abandoning",
+  );
+
+  const parkedProject: GameState["research"]["projects"][number] = {
+    ...summerBase.research.projects[0],
+    id: "parked_probe",
+    templateId: "bioactive_liner_pilot",
+    title: { en: "Parked probe", zh: "暂停项目探针" },
+    progress: 27,
+  };
+  const parkedBase: GameState = {
+    ...summerBase,
+    screen: "planning",
+    research: {
+      ...summerBase.research,
+      projects: [...summerBase.research.projects, parkedProject],
+    },
+  };
+  const parkedAfterWeek = finishWeek(parkedBase);
+  const parkedAfter = parkedAfterWeek.research.projects.find(
+    (project) => project.id === parkedProject.id,
+  );
+  assert(
+    parkedAfter?.progress === parkedProject.progress &&
+      !parkedAfterWeek.research.activity.some(
+        (activity) =>
+          activity.projectId === parkedProject.id &&
+          (activity.kind === "risk" || activity.kind === "event"),
+      ),
+    "P3 parked project progressed or rolled risk despite not being active",
+  );
 }
 
 const quick = process.argv.includes("--quick");
@@ -884,6 +1237,17 @@ const finalStats: GameState["stats"][] = [];
 const finalStatsByBot = new Map<string, GameState["stats"][]>();
 const decisions: number[] = [];
 const botActionCounts = new Map<string, Record<string, number>>();
+const publicationCountsByBot = new Map<string, number[]>();
+const posterCountsByBot = new Map<string, number[]>();
+const clinicalRecordsByBot = new Map<string, number[]>();
+const researchActivitiesSeen = new Set<string>();
+const researchEventIdsSeen = new Set<string>();
+const threePublicationRuns: Array<{
+  botId: string;
+  seed: number;
+  publications: number;
+  clinicalRecord: number;
+}> = [];
 let completed = 0;
 let deterministicReplays = 0;
 let maxDecisions = 0;
@@ -923,6 +1287,9 @@ for (let botIndex = 0; botIndex < BOTS.length; botIndex += 1) {
   const botReadiness: number[] = [];
   const botEndings = new Map<string, number>();
   const botFinalStats: GameState["stats"][] = [];
+  const botPublications: number[] = [];
+  const botPosters: number[] = [];
+  const botClinicalRecords: number[] = [];
   for (
     let difficultyIndex = 0;
     difficultyIndex < DIFFICULTIES.length;
@@ -947,6 +1314,23 @@ for (let botIndex = 0; botIndex < BOTS.length; botIndex += 1) {
       botReadiness.push(finalReadiness);
       finalStats.push(primary.finalState.stats);
       botFinalStats.push(primary.finalState.stats);
+      const publicationCount = primary.finalState.research.publications.length;
+      const clinicalRecord = getStat(primary.finalState.stats, "clinicalRecord");
+      botPublications.push(publicationCount);
+      botPosters.push(primary.finalState.research.posters);
+      botClinicalRecords.push(clinicalRecord);
+      for (const activity of primary.finalState.research.activity) {
+        researchActivitiesSeen.add(activity.eventId ?? activity.kind);
+        if (activity.eventId) researchEventIdsSeen.add(activity.eventId);
+      }
+      if (publicationCount >= 3) {
+        threePublicationRuns.push({
+          botId: bot.id,
+          seed,
+          publications: publicationCount,
+          clinicalRecord,
+        });
+      }
       const endingId = primary.finalState.endingId ?? "missing";
       if (!maxReadinessRun || finalReadiness > maxReadinessRun.value) {
         maxReadinessRun = {
@@ -972,6 +1356,9 @@ for (let botIndex = 0; botIndex < BOTS.length; botIndex += 1) {
   readinessByBot.set(bot.id, botReadiness);
   endingsByBot.set(bot.id, botEndings);
   finalStatsByBot.set(bot.id, botFinalStats);
+  publicationCountsByBot.set(bot.id, botPublications);
+  posterCountsByBot.set(bot.id, botPosters);
+  clinicalRecordsByBot.set(bot.id, botClinicalRecords);
 }
 
 assert(completed === expectedPrimaryRuns, `G3 expected ${expectedPrimaryRuns} runs`);
@@ -1036,12 +1423,56 @@ const deadEvents = EVENTS.filter((event) => !eventsSeen.has(event.id)).map(
 );
 const elapsedSeconds = (performance.now() - startedAt) / 1_000;
 const medianDecisions = median(decisions);
+const publicationRate = (botId: string): number => {
+  const values = publicationCountsByBot.get(botId) ?? [];
+  return values.length > 0
+    ? values.filter((count) => count >= 1).length / values.length
+    : 0;
+};
+const researchFocusedRate = publicationRate("research-max");
+const balancedPublicationRate = publicationRate("balanced");
+const clinicalPublicationValues = BOTS.filter(
+  (bot) => bot.researchStrategy === "clinical-only",
+).flatMap((bot) => publicationCountsByBot.get(bot.id) ?? []);
+const clinicalOnlyPublicationRate = clinicalPublicationValues.length > 0
+  ? clinicalPublicationValues.filter((count) => count >= 1).length /
+    clinicalPublicationValues.length
+  : 0;
+const clinicalOnlyRecords = BOTS.filter(
+  (bot) => bot.researchStrategy === "clinical-only",
+).flatMap((bot) => clinicalRecordsByBot.get(bot.id) ?? []);
+const clinicalOnlyRecordMean = mean(clinicalOnlyRecords);
+const focusedPublicationCounts = publicationCountsByBot.get("research-max") ?? [];
+const focusedPosterCounts = posterCountsByBot.get("research-max") ?? [];
+const focusedPosterMean = mean(focusedPosterCounts);
+const publicationReport = BOTS.map((bot) => {
+  const publications = publicationCountsByBot.get(bot.id) ?? [];
+  const posters = posterCountsByBot.get(bot.id) ?? [];
+  const clinical = clinicalRecordsByBot.get(bot.id) ?? [];
+  const distribution = [...new Set(publications)]
+    .sort((left, right) => left - right)
+    .map(
+      (count) =>
+        `${count}:${publications.filter((value) => value === count).length}`,
+    )
+    .join("/");
+  const posterDistribution = [...new Set(posters)]
+    .sort((left, right) => left - right)
+    .map(
+      (count) => `${count}:${posters.filter((value) => value === count).length}`,
+    )
+    .join("/");
+  return `${bot.id}[pub>=1=${(publicationRate(bot.id) * 100).toFixed(1)}%,pub-dist=${distribution || "none"},poster-dist=${posterDistribution || "none"},poster-mean=${mean(posters).toFixed(2)},clinical=${mean(clinical).toFixed(2)}]`;
+}).join(" | ");
+const deadResearchEvents = RESEARCH_EVENTS.filter(
+  (event) => !researchEventIdsSeen.has(event.id),
+).map((event) => event.id);
 
 console.log(
-  `P2 ${quick ? "SMOKE" : "BALANCE"}: ${completed} primary + ${deterministicReplays} exact replays in ${elapsedSeconds.toFixed(2)}s`,
+  `P3 ${quick ? "SMOKE" : "BALANCE"}: ${completed} primary + ${deterministicReplays} exact replays in ${elapsedSeconds.toFixed(2)}s`,
 );
 console.log(
-  `Content: events=${EVENTS.length}, cards=${CARDS.length}, endings=${ENDINGS.length}, actions=${ACTIONS.length}, electives=${ELECTIVES.length}, break tracks=${BREAK_TRACKS.length}, bots=${BOTS.length}`,
+  `Content: events=${EVENTS.length}, cards=${CARDS.length}, endings=${ENDINGS.length}, actions=${ACTIONS.length}, electives=${ELECTIVES.length}, break tracks=${BREAK_TRACKS.length}, research=${RESEARCH_LABS.length} labs/${RESEARCH_PROJECT_TEMPLATES.length} projects/${RESEARCH_EVENTS.length} authored events, bots=${BOTS.length}`,
 );
 console.log(
   "P0/P1 foundation PASS: modifier registry, soft-cap bands/floor/sign, drift, AP curve, boss ramp",
@@ -1059,6 +1490,13 @@ console.log(
   `CR component means by bot [knowledge,handSkill,clinicalSense,empathy,confidence]: ${crComponentsByBotReport}`,
 );
 console.log(`Endings by bot: ${endingsByBotReport}`);
+console.log(`Research outcomes: ${publicationReport}`);
+console.log(
+  `G5 rates: focused=${(researchFocusedRate * 100).toFixed(1)}%; balanced=${(balancedPublicationRate * 100).toFixed(1)}%; clinical-only=${(clinicalOnlyPublicationRate * 100).toFixed(1)}%; authored activity sources=${researchActivitiesSeen.size}; 3+ publication runs=${threePublicationRuns.length}; clinical-only record mean=${clinicalOnlyRecordMean.toFixed(2)}`,
+);
+console.log(
+  `Research event coverage: ${researchEventIdsSeen.size}/${RESEARCH_EVENTS.length}; dead=${deadResearchEvents.length > 0 ? deadResearchEvents.join(",") : "none"}; focused poster mean=${focusedPosterMean.toFixed(3)}`,
+);
 console.log(
   `Max CR run: value=${maxReadinessRun.value} bot=${maxReadinessRun.botId} difficulty=${maxReadinessRun.difficulty} seed=${maxReadinessRun.seed} ending=${maxReadinessRun.endingId}; ${maxReadinessStatsReport}; electives=${maxReadinessRun.electiveChoices.join(",")}; breaks=${maxReadinessRun.breakChoices.map((choice) => `${choice.afterSemester}:${choice.trackId}`).join(",")}`,
 );
@@ -1100,6 +1538,46 @@ if (!quick) {
     medianDecisions >= 250,
     `G9 P2 interim requires median run length >=250 decisions, observed ${medianDecisions}`,
   );
+  const g5Failures: string[] = [];
+  if (researchFocusedRate < 0.6) {
+    g5Failures.push(
+      `focused publication rate required >=60%, observed ${(researchFocusedRate * 100).toFixed(3)}%`,
+    );
+  }
+  if (balancedPublicationRate > 0.2) {
+    g5Failures.push(
+      `balanced publication rate required <=20%, observed ${(balancedPublicationRate * 100).toFixed(3)}%`,
+    );
+  }
+  if (clinicalOnlyPublicationRate > 0.05) {
+    g5Failures.push(
+      `clinical-only publication rate required <=5%, observed ${(clinicalOnlyPublicationRate * 100).toFixed(3)}%`,
+    );
+  }
+  if (focusedPublicationCounts.some((count) => count < 1 || count > 2)) {
+    g5Failures.push(
+      `focused publication tuning requires every run in [1,2], observed range ${Math.min(...focusedPublicationCounts)}-${Math.max(...focusedPublicationCounts)}`,
+    );
+  }
+  if (focusedPosterMean < 1 || focusedPosterMean > 2) {
+    g5Failures.push(
+      `focused poster tuning requires mean [1,2], observed ${focusedPosterMean.toFixed(3)}`,
+    );
+  }
+  const hiddenCostRuns = threePublicationRuns.filter(
+    (run) => run.clinicalRecord > clinicalOnlyRecordMean - 5,
+  );
+  if (hiddenCostRuns.length > 0) {
+    g5Failures.push(
+      `3+ publication runs without >=5-point visible clinicalRecord cost: ${hiddenCostRuns
+        .map(
+          (run) =>
+            `${run.botId}/${run.seed}=pub${run.publications},clinical${run.clinicalRecord}`,
+        )
+        .join(",")}; clinical-only mean=${clinicalOnlyRecordMean.toFixed(3)}`,
+    );
+  }
+  assert(g5Failures.length === 0, `G5 ${g5Failures.join("; ")}; ${publicationReport}`);
 }
 console.log(
   quick
@@ -1107,11 +1585,15 @@ console.log(
     : "G1 PASS: >=10 endings and max share <=25% | G2 PASS: CR mean [62,78], population SD >=8, max <95",
 );
 console.log("G3 PASS: all bots terminate, guard <20000");
-console.log("G4 DEFERRED P9 | G5 DEFERRED P3 | G6 DEFERRED P7 | G7 DEFERRED P6");
+console.log(
+  quick
+    ? "G4 DEFERRED P9 | G5 DIAGNOSTIC ONLY: full-sweep rate assertions skipped | G6 DEFERRED P7 | G7 DEFERRED P6"
+    : "G4 DEFERRED P9 | G5 PASS: focused >=60%, balanced <=20%, clinical-only <=5%, 3+ papers show clinicalRecord cost | G6 DEFERRED P7 | G7 DEFERRED P6",
+);
 console.log(
   quick
     ? "G8 DEFERRED P6 | G9 DIAGNOSTIC ONLY: full-sweep median assertion skipped | G10 PASS: byte-identical final states"
     : `G8 DEFERRED P6 | G9 P2 PASS: median ${medianDecisions} >=250 | G10 PASS: byte-identical final states`,
 );
 console.log("G11 EXTERNAL: build + validator | G12 PASS: V1 migration + future refusal");
-console.log(quick ? "SMOKE P2 OK" : "BALANCE P2 OK");
+console.log(quick ? "SMOKE P3 OK" : "BALANCE P3 OK");

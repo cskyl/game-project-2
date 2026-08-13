@@ -18,7 +18,7 @@ export function PlanningScreen({
   onFinishWeek: () => void;
 }) {
   const { t, ui } = useLang();
-  const actions = getActions();
+  const actions = getActions(state);
   const cards = getDrawnCards(state);
   const totalAp = DIFFICULTY[state.difficulty].actionPoints;
   const cardsLeft = MAX_CARDS_PLAYED_PER_WEEK - state.cardsPlayedThisWeek;

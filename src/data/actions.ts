@@ -144,15 +144,36 @@ export const ACTIONS: Action[] = [
     unlock: { minSemester: 7 },
   },
   {
-    id: "research",
-    title: { en: "Research / CV Building", zh: "科研 / 履历建设" },
+    id: "research_interest",
+    title: { en: "Show Research Interest", zh: "主动了解科研" },
     description: {
-      en: "Build the academic side. Research and reputation up, some stress.",
-      zh: "建设学术那一面。科研和口碑提升，略有压力。",
+      en: "From semester 2, ask a real methods question and build trust toward a lab invitation.",
+      zh: "从第二学期开始，提出一个真正的方法问题，为实验室邀请积累信任。",
     },
-    cost: 3,
-    effects: { research: 4, knowledge: 1, reputation: 2, stress: 4, mood: -2 },
-    tags: ["study", "heavy"],
+    flavor: {
+      en: "You arrive with one specific question instead of saying you will do anything. Reyes notices the difference.",
+      zh: "你带着一个具体问题来，而不是笼统地说“什么都愿意做”。Reyes 注意到了区别。",
+    },
+    cost: 1,
+    effects: { confidence: 1, stress: 1 },
+    tags: ["research", "social"],
+    unlock: { minSemester: 2 },
+  },
+  {
+    id: "lab_work",
+    title: { en: "Work in the Lab", zh: "推进实验室工作" },
+    description: {
+      en: "Commit two AP to the selected project. Progress scales with research skill, focus, lab trust, and its expected phase length.",
+      zh: "投入 2 点行动力推进当前项目。进度由科研能力、专注、实验室信任和该阶段预计时长共同决定。",
+    },
+    flavor: {
+      en: "The glamorous version is a figure. The real version is a careful notebook and one fewer avoidable mistake.",
+      zh: "光鲜的版本是一张图；真实的版本是一本认真记录的笔记，以及少犯一个本可避免的错误。",
+    },
+    cost: 2,
+    effects: { research: 3, focus: -4, stamina: -2, stress: 4 },
+    tags: ["research", "study", "heavy"],
+    unlock: { minSemester: 2 },
   },
   {
     id: "work",

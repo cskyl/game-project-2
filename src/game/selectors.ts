@@ -22,7 +22,13 @@ export const wellness = (s: GameState) => wellnessFn(s.stats);
 export const careerReadiness = (s: GameState) => careerReadinessFn(s.stats);
 export const lifeBalance = (s: GameState) => lifeBalanceFn(s.stats);
 
-export const getActions = (): Action[] => ACTIONS;
+const RESEARCH_DASHBOARD_ACTIONS = new Set(["research_interest", "lab_work"]);
+
+/** Screen-specific verbs stay out of the ordinary weekly action grid. */
+export const getActions = (state?: GameState): Action[] =>
+  state?.screen === "researchDashboard"
+    ? ACTIONS.filter((action) => RESEARCH_DASHBOARD_ACTIONS.has(action.id))
+    : ACTIONS.filter((action) => !RESEARCH_DASHBOARD_ACTIONS.has(action.id));
 
 export function getPendingEvent(state: GameState): GameEvent | undefined {
   return state.pendingEventId ? EVENTS_BY_ID[state.pendingEventId] : undefined;

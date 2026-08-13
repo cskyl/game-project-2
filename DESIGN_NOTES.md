@@ -156,3 +156,91 @@ implementation detail open. The frozen design remains authoritative.
   effects in the persistent strip. P10 still owns the frozen single-column
   mobile sticky AP/stat header. P2 does implement the functional §8.3 stat
   threshold ticks and fully localizes every current modifier-hook description.
+
+## 2026-08-12 — P3 research content contracts
+
+- **Four-lab topology.** The frozen design names Reyes as the research-access
+  NPC but does not prescribe four additional PI characters. The four P3 labs
+  are therefore distinct groups inside Reyes's interdisciplinary collaborative:
+  biomaterials, clinical outcomes, community oral health, and digital dentistry.
+  This keeps every `piNpcId` linked to the frozen P5 roster while giving each lab
+  its own intensity, prestige, entry profile, and concrete project slate.
+- **Research event boundary.** The 24 authored setback/lucky events live in the
+  research registry rather than the generic 95-event pool. They are referenced
+  explicitly by project templates and filtered by project phase, so a research
+  roll cannot suppress an unrelated life event unless the research system
+  actually selects it. The schema has no choice array; P3 therefore authors
+  setbacks as visible, bounded project mutations rather than pretending the
+  player can choose away contamination, missing follow-up, or peer review.
+- **Failing honestly still builds skill.** Several setbacks pair lost progress
+  or quality with a small research/knowledge/empathy gain. This is deliberate
+  failing-forward, not a cancellation of the cost: the project clock and mood or
+  stress still show what happened, while careful error detection remains worth
+  learning from.
+- **Phase duration records.** Every project supplies all eleven `ProjectPhase`
+  keys. Active phases have positive expected weeks; accepted, rejected, and
+  abandoned are terminal and therefore use zero. Quality-driver weights are
+  unique per stat and sum to exactly one, which the content validator now
+  enforces alongside exact roster counts and orphan-free event producers.
+- **Recruitment seam before P5.** P3 records the lab invitation as a bilingual,
+  visible research-dashboard activity once `reputationInLab >= 30` and
+  `knowledge >= 45`; the eligible lab list also applies each lab's authored
+  requirements. P5 owns presenting that same invitation through Reyes's NPC arc
+  without changing these thresholds or duplicating the source of truth.
+- **Research action conversion.** `research_interest` costs 1 AP and grants 8
+  lab-reputation points. `lab_work` costs 2 AP and queues
+  `clamp((100 / expectedPhaseWeeks) * (0.55 + research/200 + focus/400 +
+  reputationInLab/400), 8, 55)` progress for the active project. Queued work is
+  consumed by the authoritative research tick after drift; every joined lab
+  also applies its visible 1–3 weekly stress commitment.
+- **Research-dashboard verb boundary.** Ordinary actions, cards, and week-end
+  resolution are planning-screen verbs; `research_interest` and `lab_work` are
+  dashboard verbs. Both the selectors/status display and engine enforce the
+  same finite-state boundary. Queued project effort locks starting, selecting,
+  abandoning, and resubmitting until the weekly research tick consumes it, so
+  work cannot be reassigned after the AP has been spent.
+- **Project identity rather than an arbitrary cap.** The frozen design does not
+  prescribe a maximum active or completed project count, so P3 adds no hidden
+  max-two rule. Each of the ten authored templates can be started only once,
+  preventing duplicate-template publication farming while allowing the player
+  to choose how many distinct questions to carry.
+- **Risk, stalls, and review clocks.** Project risk and reviewer draws consume
+  only the state-threaded RNG. Authored stalls decrement before new risks fire,
+  so a two-week stall blocks exactly the next two planning weeks. Initial and
+  resubmission review clocks are seeded draws of 2–4 weeks; rejection remains
+  recoverable by moving down one venue with an explicit eight-point quality
+  cost.
+- **Active-project risk scope.** Authored weekly risk belongs only to the
+  selected project. Parked projects do not generate parallel setbacks; a
+  selected submission may still draw a submission/reviewer-authored event while
+  its ordinary 2–4 week review clock runs. This prevents a player from starting
+  every template to manufacture ten independent weekly lotteries while keeping
+  the frozen submitted-phase event producers live.
+- **Summer Research pipeline.** Every valid action in the `summer_research`
+  break adds 4 visible lab-reputation points; before joining, crossing the same
+  30-reputation plus 45-knowledge threshold exposes the ordinary lab offers.
+  With a selected, unstalled working project, it additionally adds 38 visible
+  progress and uses the ordinary phase/quality transition function. Invalid or
+  merely prefix-matching action ids are strict no-ops. The ordinary break stat
+  payload still applies, so the three-turn fork remains a real full-time
+  research block and can carry a manuscript into submission.
+- **IRB repeat semantics.** The authored IRB clarification sets `repeatPhase`:
+  both phase progress and `weeksInPhase` reset to zero. It does not rewind the
+  project to an earlier phase, and its visible quality/knowledge gains remain;
+  rework is costly without pretending careful clarification taught nothing.
+- **Poster/publication distinction.** A non-poster project's first submission
+  earns one explicitly logged poster presentation; resubmission cannot duplicate
+  it. A poster-only venue earns its poster on acceptance. The visible poster
+  ledger is capped at two per run, and only a real ledger increase emits a
+  poster effect; later submissions do not invent a third presentation. Regional,
+  specialty, and top acceptances additionally create a first-author publication
+  and grant `reyes_letter`. This makes the focused 1–2 publication / 1–2 poster
+  tuning target measurable without treating a poster as a journal paper or
+  imposing an undocumented project-count cap. If a poster-only project resolves
+  after both slots are used, its visible outcome is truthfully labeled an
+  internal lab presentation and grants no poster, publication, or letter.
+- **Research-output compatibility seam.** P3 payoffs still raise the existing
+  `research` stat used by the P0 condition evaluator, while canonical
+  publications and posters live in `ResearchState`. P7's Match implementation
+  must compute its weighted research-output term from those canonical ledgers
+  (and future grants), not infer counts back from the research stat.

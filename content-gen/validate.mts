@@ -8,6 +8,11 @@ import { SEED_EVENTS } from "../src/data/events.seed";
 import { EVENTS } from "../src/data/events";
 import { BREAK_TRACKS } from "../src/data/breaks";
 import { ELECTIVES } from "../src/data/electives";
+import {
+  RESEARCH_EVENTS,
+  RESEARCH_LABS,
+  RESEARCH_PROJECT_TEMPLATES,
+} from "../src/data/research";
 import { SEMESTERS } from "../src/data/semesters";
 import { SYSTEM_FLAGS } from "../src/data/systemFlags";
 import { V2_UI_TEXT } from "../src/data/uiText";
@@ -16,6 +21,7 @@ import type {
   ConditionStatKey,
   EventCondition,
   LocalizedText,
+  ProjectPhase,
   Stage,
   StatKey,
 } from "../src/game/types";
@@ -42,6 +48,42 @@ const CONDITION_STATS = new Set<ConditionStatKey>([
 ]);
 const RARITIES = new Set(["common", "rare", "epic"]);
 const INTENTIONAL_EVENT_SHADOWS = new Set(["early_first_week_overload"]);
+const PROJECT_PHASES: readonly ProjectPhase[] = [
+  "idea",
+  "pilot",
+  "irb",
+  "collection",
+  "analysis",
+  "writing",
+  "submitted",
+  "revision",
+  "accepted",
+  "rejected",
+  "abandoned",
+];
+const ACTIVE_PROJECT_PHASES = new Set<ProjectPhase>([
+  "idea",
+  "pilot",
+  "irb",
+  "collection",
+  "analysis",
+  "writing",
+  "submitted",
+  "revision",
+]);
+const FROZEN_NPC_IDS = new Set([
+  "mika",
+  "reyes",
+  "jordan",
+  "priya",
+  "sam",
+  "dr_okafor",
+  "lena",
+  "theo",
+  "nadia",
+  "chris",
+  "partner",
+]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -175,8 +217,20 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
   if (BREAK_TRACKS.length !== 5) {
     issues.push({ path: "breakTracks", message: `expected frozen roster of 5, found ${BREAK_TRACKS.length}` });
   }
+  if (RESEARCH_LABS.length !== 4) {
+    issues.push({ path: "research.labs", message: `expected exactly 4 labs, found ${RESEARCH_LABS.length}` });
+  }
+  if (RESEARCH_PROJECT_TEMPLATES.length !== 10) {
+    issues.push({ path: "research.projects", message: `expected exactly 10 project templates, found ${RESEARCH_PROJECT_TEMPLATES.length}` });
+  }
+  if (RESEARCH_EVENTS.length !== 24) {
+    issues.push({ path: "research.events", message: `expected exactly 24 authored research events, found ${RESEARCH_EVENTS.length}` });
+  }
   issues.push(...duplicateIssues("electives", ELECTIVES));
   issues.push(...duplicateIssues("breakTracks", BREAK_TRACKS));
+  issues.push(...duplicateIssues("research.labs", RESEARCH_LABS));
+  issues.push(...duplicateIssues("research.projects", RESEARCH_PROJECT_TEMPLATES));
+  issues.push(...duplicateIssues("research.events", RESEARCH_EVENTS));
 
   for (const [label, items] of registries) issues.push(...duplicateIssues(label, items));
   if (ENDINGS.length !== 24) {
@@ -207,6 +261,9 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
     ["achievements", ACHIEVEMENTS],
     ["electives", ELECTIVES],
     ["breakTracks", BREAK_TRACKS],
+    ["researchLabs", RESEARCH_LABS],
+    ["researchProjects", RESEARCH_PROJECT_TEMPLATES],
+    ["researchEvents", RESEARCH_EVENTS],
     ["semesters", SEMESTERS],
     ["v2UiText", V2_UI_TEXT],
   ];
@@ -352,6 +409,187 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
     if (eligible.length < 3) issues.push({ path: `electives.semester${semesterId}`, message: `needs at least 3 eligible offers, found ${eligible.length}` });
   }
 
+  const labIds = new Set(RESEARCH_LABS.map((lab) => lab.id));
+  const projectIdsByLab = new Map<string, number>();
+  for (const lab of RESEARCH_LABS) {
+    const path = `research.labs.${lab.id}`;
+    issues.push(...validateCondition(lab.requirements, `${path}.requirements`));
+    if (!Number.isInteger(lab.intensity) || lab.intensity < 1 || lab.intensity > 3) {
+      issues.push({ path: `${path}.intensity`, message: "must be an integer in 1..3" });
+    }
+    if (!Number.isFinite(lab.prestige) || lab.prestige < 0 || lab.prestige > 100) {
+      issues.push({ path: `${path}.prestige`, message: "must be in 0..100" });
+    }
+    if (!FROZEN_NPC_IDS.has(lab.piNpcId)) {
+      issues.push({ path: `${path}.piNpcId`, message: `unknown frozen-roster NPC "${lab.piNpcId}"` });
+    }
+    if (lab.perks.length === 0 || lab.perks.some((perk) => !isNonEmptyString(perk))) {
+      issues.push({ path: `${path}.perks`, message: "must grant at least one non-empty lab flag" });
+    }
+  }
+
+  const researchEventById = new Map(RESEARCH_EVENTS.map((event) => [event.id, event]));
+  const referencedResearchEvents = new Set<string>();
+  for (const project of RESEARCH_PROJECT_TEMPLATES) {
+    const path = `research.projects.${project.id}`;
+    if (!labIds.has(project.labId)) {
+      issues.push({ path: `${path}.labId`, message: `unknown lab "${project.labId}"` });
+    } else {
+      projectIdsByLab.set(project.labId, (projectIdsByLab.get(project.labId) ?? 0) + 1);
+    }
+    if (!Number.isFinite(project.baseRisk) || project.baseRisk <= 0 || project.baseRisk >= 1) {
+      issues.push({ path: `${path}.baseRisk`, message: "must be a probability strictly between 0 and 1" });
+    }
+    const definedPhases = Object.keys(project.phaseWeeks) as ProjectPhase[];
+    for (const phase of PROJECT_PHASES) {
+      const weeks = project.phaseWeeks[phase];
+      if (!Number.isInteger(weeks) || weeks < 0) {
+        issues.push({ path: `${path}.phaseWeeks.${phase}`, message: "must be a non-negative integer" });
+      } else if (ACTIVE_PROJECT_PHASES.has(phase) && weeks === 0) {
+        issues.push({ path: `${path}.phaseWeeks.${phase}`, message: "active phases must take at least one week" });
+      } else if (!ACTIVE_PROJECT_PHASES.has(phase) && weeks !== 0) {
+        issues.push({ path: `${path}.phaseWeeks.${phase}`, message: "terminal phases must take zero weeks" });
+      }
+    }
+    for (const phase of definedPhases) {
+      if (!PROJECT_PHASES.includes(phase)) {
+        issues.push({ path: `${path}.phaseWeeks`, message: `unknown phase "${phase}"` });
+      }
+    }
+    const driverStats = project.qualityDrivers.map((driver) => driver.stat);
+    if (new Set(driverStats).size !== driverStats.length) {
+      issues.push({ path: `${path}.qualityDrivers`, message: "driver stats must be unique" });
+    }
+    let driverWeight = 0;
+    for (const driver of project.qualityDrivers) {
+      if (!CONDITION_STATS.has(driver.stat)) {
+        issues.push({ path: `${path}.qualityDrivers`, message: `unknown stat "${driver.stat}"` });
+      }
+      if (!Number.isFinite(driver.weight) || driver.weight <= 0) {
+        issues.push({ path: `${path}.qualityDrivers`, message: "weights must be positive and finite" });
+      }
+      driverWeight += driver.weight;
+    }
+    if (project.qualityDrivers.length === 0 || Math.abs(driverWeight - 1) > 0.000001) {
+      issues.push({ path: `${path}.qualityDrivers`, message: `weights must sum to 1, found ${driverWeight}` });
+    }
+    if (project.setbackEvents.length === 0) {
+      issues.push({ path: `${path}.setbackEvents`, message: "must reference authored research events" });
+    }
+    if (new Set(project.setbackEvents).size !== project.setbackEvents.length) {
+      issues.push({ path: `${path}.setbackEvents`, message: "must not contain duplicate event references" });
+    }
+    const kinds = new Set<"setback" | "lucky">();
+    for (const eventId of project.setbackEvents) {
+      referencedResearchEvents.add(eventId);
+      const event = researchEventById.get(eventId);
+      if (!event) {
+        issues.push({ path: `${path}.setbackEvents`, message: `unknown research event "${eventId}"` });
+        continue;
+      }
+      kinds.add(event.kind);
+      if (!event.phases.some((phase) => ACTIVE_PROJECT_PHASES.has(phase))) {
+        issues.push({ path: `${path}.setbackEvents`, message: `event "${eventId}" has no reachable active phase` });
+      }
+    }
+    if (!kinds.has("setback") || !kinds.has("lucky")) {
+      issues.push({ path: `${path}.setbackEvents`, message: "each template must expose both setback and lucky outcomes" });
+    }
+    for (const phase of ACTIVE_PROJECT_PHASES) {
+      const hasProducer = project.setbackEvents.some((eventId) =>
+        researchEventById.get(eventId)?.phases.includes(phase),
+      );
+      if (!hasProducer) {
+        issues.push({ path: `${path}.setbackEvents`, message: `no authored event can fire during ${phase}` });
+      }
+    }
+    for (const [key, value] of Object.entries(project.payoff)) {
+      if (!Number.isFinite(value)) {
+        issues.push({ path: `${path}.payoff.${key}`, message: "must be finite" });
+      }
+    }
+  }
+  for (const lab of RESEARCH_LABS) {
+    if ((projectIdsByLab.get(lab.id) ?? 0) === 0) {
+      issues.push({ path: `research.labs.${lab.id}`, message: "has no reachable project template" });
+    }
+  }
+
+  const projectPhaseSet = new Set<ProjectPhase>(PROJECT_PHASES);
+  let repeatPhaseProducerCount = 0;
+  for (const event of RESEARCH_EVENTS) {
+    const path = `research.events.${event.id}`;
+    if (!referencedResearchEvents.has(event.id)) {
+      issues.push({ path, message: "orphaned event is not produced by any project template" });
+    }
+    if (event.phases.length === 0) {
+      issues.push({ path: `${path}.phases`, message: "must have at least one reachable phase" });
+    }
+    if (new Set(event.phases).size !== event.phases.length) {
+      issues.push({ path: `${path}.phases`, message: "must not repeat phases" });
+    }
+    for (const phase of event.phases) {
+      if (!projectPhaseSet.has(phase) || !ACTIVE_PROJECT_PHASES.has(phase)) {
+        issues.push({ path: `${path}.phases`, message: `invalid event-producing phase "${phase}"` });
+      }
+    }
+    const scalarEffects = [
+      event.effects.progress,
+      event.effects.quality,
+      event.effects.researchPoints,
+      event.effects.reputationInLab,
+      event.effects.stallWeeks,
+      ...Object.values(event.effects.stats ?? {}),
+    ].filter((value): value is number => value !== undefined);
+    if (scalarEffects.length === 0 && !event.effects.repeatPhase) {
+      issues.push({ path: `${path}.effects`, message: "must have at least one mechanical effect" });
+    }
+    if (scalarEffects.some((value) => !Number.isFinite(value))) {
+      issues.push({ path: `${path}.effects`, message: "all effects must be finite" });
+    }
+    for (const stat of Object.keys(event.effects.stats ?? {})) {
+      if (!STATS.has(stat as StatKey)) {
+        issues.push({ path: `${path}.effects.stats`, message: `unknown effect stat "${stat}"` });
+      }
+    }
+    if (event.effects.stallWeeks !== undefined &&
+        (!Number.isInteger(event.effects.stallWeeks) || event.effects.stallWeeks < 1 || event.effects.stallWeeks > 2)) {
+      issues.push({ path: `${path}.effects.stallWeeks`, message: "must be an integer in 1..2" });
+    }
+    if (event.effects.repeatPhase) {
+      repeatPhaseProducerCount += 1;
+      if (event.kind !== "setback") {
+        issues.push({ path: `${path}.effects.repeatPhase`, message: "phase repeats must be authored as setbacks" });
+      }
+      if (event.phases.length !== 1 || event.phases[0] !== "irb") {
+        issues.push({ path: `${path}.phases`, message: "phase-repeat events are only valid during the IRB phase" });
+      }
+    }
+    const hasNegative = scalarEffects.some((value) => value < 0) || Boolean(event.effects.repeatPhase) || Boolean(event.effects.stallWeeks);
+    const hasPositive = scalarEffects.some((value) => value > 0);
+    if (event.kind === "setback" && !hasNegative) {
+      issues.push({ path: `${path}.effects`, message: "setback must have a visible cost or delay" });
+    }
+    if (event.kind === "lucky" && !hasPositive) {
+      issues.push({ path: `${path}.effects`, message: "lucky event must have a visible benefit" });
+    }
+  }
+  if (repeatPhaseProducerCount === 0) {
+    issues.push({ path: "research.events", message: "must include at least one authored phase-repeat producer" });
+  }
+  const irbRevision = researchEventById.get("research_irb_clarification");
+  if (
+    !irbRevision ||
+    !irbRevision.effects.repeatPhase ||
+    irbRevision.phases.length !== 1 ||
+    irbRevision.phases[0] !== "irb"
+  ) {
+    issues.push({
+      path: "research.events.research_irb_clarification",
+      message: "must repeat exactly the IRB phase",
+    });
+  }
+
   const bossesBySemester = new Map<number, number>();
   for (const boss of BOSSES) {
     bossesBySemester.set(boss.semesterId, (bossesBySemester.get(boss.semesterId) ?? 0) + 1);
@@ -388,9 +626,9 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
 const result = runValidation();
 console.log("Dental School Life Sim content validator");
 console.log(
-  `Inventory: events=${EVENTS.length}, cards=${CARDS.length}, endings=${ENDINGS.length}, actions=${ACTIONS.length}, bosses=${BOSSES.length}, achievements=${ACHIEVEMENTS.length}, semesters=${SEMESTERS.length}, electives=${ELECTIVES.length}, breakTracks=${BREAK_TRACKS.length}`,
+  `Inventory: events=${EVENTS.length}, cards=${CARDS.length}, endings=${ENDINGS.length}, actions=${ACTIONS.length}, bosses=${BOSSES.length}, achievements=${ACHIEVEMENTS.length}, semesters=${SEMESTERS.length}, electives=${ELECTIVES.length}, breakTracks=${BREAK_TRACKS.length}, researchLabs=${RESEARCH_LABS.length}, researchProjects=${RESEARCH_PROJECT_TEMPLATES.length}, researchEvents=${RESEARCH_EVENTS.length}`,
 );
-console.log(`Checks: ${result.localizedCount} LocalizedText values; ids, stages, stats, rarities, conditions, reachability, flags, boss coverage`);
+console.log(`Checks: ${result.localizedCount} LocalizedText values; ids, stages, stats, rarities, conditions, reachability, flags, boss coverage, research producers and phase completeness`);
 for (const warning of result.warnings) console.warn(`WARNING: ${warning}`);
 if (result.issues.length > 0) {
   for (const issue of result.issues) console.error(`ERROR: ${issue.path}: ${issue.message}`);

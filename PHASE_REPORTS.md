@@ -99,3 +99,45 @@ Deferred gates are not counted as passes.
 - Sweep diagnostics beyond P2's gate: event coverage was 92/95 (96.8%); the
   min-max action-share failure remains correctly deferred to P6/G8. Full
   ≥14-ending G1 remains P7 work, and final content coverage remains P9 work.
+
+## P3 — parallel research career
+
+**Status:** green on `v2/p3-research`.
+
+- Landed the complete research loop: four labs, ten bilingual project
+  templates, 24 authored setbacks/lucky breaks, 1-AP recruitment, 2-AP lab
+  work, phase-by-phase progress and quality, seeded project risk, visible
+  stalls, 2–4-week peer review, revision/rejection/resubmission, posters,
+  first-author publications, lab trust, and Reyes-letter payoff. Seeded
+  rolls and authored outcomes are recorded in attributed dashboard activity;
+  P2's Summer Research break now advances the selected project through this
+  same phase/submission/poster pipeline rather than acting as a disconnected stat bump.
+- The bilingual dashboard exposes recruitment requirements and locked reasons,
+  lab identity/intensity/prestige, project phase/progress/quality/risk/review
+  clock, active-project selection, publication/poster output, and an
+  expandable arithmetic breakdown for quality/risk/review rolls. Static render
+  smoke exercised both recruitment and active/review states in EN and ZH.
+- **G5 PASS:** over 1,200 runs, the research-focused bot earned at least one
+  accepted publication in **120/120 = 100.0%** of runs (required ≥60%);
+  balanced earned one in **0/120 = 0.0%** (required ≤20%); clinical-only earned
+  one in **0/240 = 0.0%** (required ≤5%). Focused runs produced 1–2 papers
+  (116 produced two; 4 produced one); poster counts were also 1–2
+  (119 produced two; 1 produced one), with mean **1.992**, within the authored
+  output target.
+- Opportunity cost stayed visible: focused mean `clinicalRecord` was **54.40**
+  versus clinical-only **95.26** (−40.86). No run reached 3+ publications, so
+  the explicit 3+-paper clinical-cost assertion had no violating run.
+- Earlier gates remained green: **G1 interim** 10 endings, maximum
+  `operator_owner` **23.9%**; **G2** `careerReadiness` mean **74.346**, population
+  SD **10.921**, max **93**; **G3** 1,200/1,200 runs terminated; **G9 interim**
+  median **662.5** decisions; **G10** all 1,200 exact input replays were
+  byte-identical; **G12** migration fixtures passed.
+- **G11 PASS:** strict TypeScript + Vite build clean; validator checked 1,375
+  bilingual values and the research reference graph with 0 errors (15 declared
+  later-phase/shadow warnings); `engine.ts` remained a 593-line orchestrator; render
+  smoke produced all 14 states in both languages.
+- Deferred by the frozen phase plan: patient/sim-lab clinical records are P4;
+  G8 action-share tuning is P6; the full ≥14-ending G1 and Match are P7; final
+  ≥90% authored-event coverage is P9. The P3 harness nevertheless reports
+  generic and research-event coverage separately for later content tuning
+  (17/24 authored research events fired in the final full P3 sweep).

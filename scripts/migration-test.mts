@@ -1,9 +1,27 @@
 import { INITIAL_STATS } from "../src/game/initialState";
 import { migrateSave, type V1GameState } from "../src/game/migration";
 import { nextRandom } from "../src/game/rng";
-import { chooseBreakTrack, takeBreakAction } from "../src/game/engine";
+import {
+  chooseAction,
+  chooseBreakTrack,
+  joinResearchLab,
+  startResearchProject,
+  finishWeek,
+  playCard,
+  selectActiveResearchProject,
+  abandonResearchProject,
+  takeBreakAction,
+} from "../src/game/engine";
 import { BREAK_TRACKS } from "../src/data/breaks";
-import type { GameState, StatKey } from "../src/game/types";
+import {
+  RESEARCH_EVENTS_BY_ID,
+  RESEARCH_PROJECT_TEMPLATES,
+} from "../src/data/research";
+import {
+  isResearchActionAvailable,
+  tickResearch,
+} from "../src/game/systems/research";
+import type { GameState, ResearchProject, StatKey } from "../src/game/types";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`G12 ASSERT FAILED: ${message}`);
@@ -154,6 +172,30 @@ assertRefusedWithoutThrow(
   "P1 save with malformed elective offers",
 );
 
+// P2 V2 saves contain the original research skeleton but predate the P3
+// dashboard/activity fields. They must hydrate without discarding any existing
+// research counters or arrays.
+const {
+  labOffers: _oldLabOffers,
+  activeProjectId: _oldActiveProjectId,
+  activity: _oldResearchActivity,
+  ...p2Research
+} = migrated.state.research;
+const p2Save = { ...migrated.state, research: p2Research };
+const p2Loaded = migrateSave(p2Save);
+assert(p2Loaded.ok && p2Loaded.migrated, "P2 V2 research state was not hydrated");
+assert(p2Loaded.state.research.labOffers.length === 0, "P2 lab offer defaults wrong");
+assert(p2Loaded.state.research.activity.length === 0, "P2 activity defaults wrong");
+assert(
+  p2Loaded.state.research.reputationInLab === migrated.state.research.reputationInLab,
+  "P2 lab reputation changed",
+);
+assertRefusedWithoutThrow(
+  { ...p2Save, research: { ...p2Research, activity: "not-an-array" } },
+  "malformed",
+  "P2 save with malformed research activity",
+);
+
 const invalidRngState = {
   ...migrated.state,
   rngSeed: Number.NaN,
@@ -206,6 +248,356 @@ for (let turn = 0; turn < 3; turn += 1) {
 }
 assert(boardState.flags.includes("inbde_ready"), "board prep did not grant inbde_ready");
 
+// P3 research core contracts: recruitment is visible and AP-bound, project
+// templates cannot be farmed twice, stalls block exactly their advertised
+// future weeks, and seeded review clocks last exactly 2–4 ticks.
+let recruitment: GameState = {
+  ...fresh,
+  semesterIndex: 1,
+  screen: "researchDashboard",
+  actionPointsRemaining: 10,
+  stats: { ...fresh.stats, knowledge: 45 },
+};
+for (let attempt = 0; attempt < 4; attempt += 1) {
+  const apBefore = recruitment.actionPointsRemaining;
+  recruitment = chooseAction(recruitment, "research_interest");
+  assert(
+    recruitment.actionPointsRemaining === apBefore - 1,
+    "research interest did not cost exactly 1 AP",
+  );
+}
+assert(recruitment.research.reputationInLab === 32, "research interest trust gain changed");
+assert(recruitment.research.labOffers.length > 0, "eligible lab offer was not visible");
+const offeredLab = recruitment.research.labOffers[0];
+recruitment = joinResearchLab(recruitment, offeredLab);
+assert(recruitment.research.labId === offeredLab, "visible lab offer could not be joined");
+const projectTemplate = RESEARCH_PROJECT_TEMPLATES.find(
+  (template) => template.labId === offeredLab,
+);
+assert(projectTemplate, "joined lab has no project template");
+recruitment = startResearchProject(recruitment, projectTemplate.id);
+assert(recruitment.research.projects.length === 1, "research project did not start");
+const onceStarted = recruitment;
+recruitment = startResearchProject(recruitment, projectTemplate.id);
+assert(
+  recruitment.research.projects.length === onceStarted.research.projects.length,
+  "duplicate project template could be farmed",
+);
+const labApBefore = recruitment.actionPointsRemaining;
+recruitment = chooseAction(recruitment, "lab_work");
+assert(
+  recruitment.actionPointsRemaining === labApBefore - 2 &&
+    recruitment.research.researchPoints > 0,
+  "lab work did not cost 2 AP and queue visible progress",
+);
+const queued = recruitment;
+assert(
+  selectActiveResearchProject(queued, "not_the_queued_project") === queued,
+  "queued effort allowed a project switch",
+);
+assert(
+  abandonResearchProject(queued, queued.research.activeProjectId ?? "") === queued,
+  "queued effort allowed its project to be abandoned",
+);
+assert(
+  startResearchProject(queued, projectTemplate.id) === queued,
+  "queued effort allowed a new project to start",
+);
+
+// Screen FSM: planning verbs and research-dashboard verbs cannot leak into one
+// another. These identity checks also catch accidental transition timestamps.
+const dashboardProbe = { ...queued, research: { ...queued.research, researchPoints: 0 } };
+assert(
+  chooseAction(dashboardProbe, "sleep") === dashboardProbe,
+  "ordinary action resolved from research dashboard",
+);
+assert(
+  playCard(dashboardProbe, dashboardProbe.weeklyCards[0] ?? "missing") === dashboardProbe,
+  "card resolved from research dashboard",
+);
+assert(finishWeek(dashboardProbe) === dashboardProbe, "week finished from research dashboard");
+const planningProbe: GameState = { ...dashboardProbe, screen: "planning" };
+assert(
+  chooseAction(planningProbe, "research_interest") === planningProbe,
+  "research interest resolved from planning screen",
+);
+assert(
+  chooseAction(planningProbe, "lab_work") === planningProbe,
+  "lab work resolved from planning screen",
+);
+
+const baseProject: ResearchProject = {
+  id: "clock_probe",
+  templateId: projectTemplate.id,
+  title: projectTemplate.title,
+  phase: "collection",
+  progress: 0,
+  quality: 60,
+  weeksInPhase: 0,
+  risk: 0,
+  stallWeeksRemaining: 2,
+  submissionCount: 0,
+  resubmissions: 0,
+  posterPresented: false,
+};
+let stalled: GameState = {
+  ...recruitment,
+  research: {
+    ...recruitment.research,
+    activeProjectId: baseProject.id,
+    researchPoints: 0,
+    projects: [baseProject],
+  },
+};
+assert(!isResearchActionAvailable(stalled, "lab_work"), "stall did not gate lab work");
+stalled = tickResearch(stalled);
+assert(
+  stalled.research.projects[0].stallWeeksRemaining === 1 &&
+    !isResearchActionAvailable(stalled, "lab_work"),
+  "two-week stall did not block its first future week",
+);
+stalled = tickResearch(stalled);
+assert(
+  stalled.research.projects[0].stallWeeksRemaining === 0 &&
+    isResearchActionAvailable(stalled, "lab_work"),
+  "two-week stall did not reopen after exactly two future weeks",
+);
+
+// IRB clarification is a real phase repeat: both the phase progress and its
+// elapsed-week counter reset, while the authored activity remains visible.
+const irbRepeat = RESEARCH_EVENTS_BY_ID.research_irb_clarification;
+assert(irbRepeat?.effects.repeatPhase, "IRB clarification repeat producer missing");
+let irbSeed: GameState | undefined;
+for (let candidate = 1; candidate <= 5000 && !irbSeed; candidate += 1) {
+  const probe: GameState = {
+    ...recruitment,
+    rngSeed: candidate,
+    rngCursor: 0,
+    research: {
+      ...recruitment.research,
+      researchPoints: 0,
+      activeProjectId: "irb_repeat_probe",
+      projects: [{
+        ...baseProject,
+        id: "irb_repeat_probe",
+        phase: "irb",
+        progress: 73,
+        weeksInPhase: 4,
+        risk: 1,
+        stallWeeksRemaining: 0,
+      }],
+    },
+  };
+  const resolved = tickResearch(probe);
+  if (resolved.research.activity.some((entry) => entry.eventId === irbRepeat.id)) {
+    irbSeed = resolved;
+  }
+}
+assert(irbSeed, "could not deterministically exercise IRB repeat event");
+const repeatedIrb = irbSeed.research.projects[0];
+assert(
+  repeatedIrb.phase === "irb" && repeatedIrb.progress === 0 && repeatedIrb.weeksInPhase === 0,
+  "IRB repeat did not reset progress and weeksInPhase",
+);
+
+for (const reviewWeeks of [2, 4]) {
+  const submitted: ResearchProject = {
+    ...baseProject,
+    id: `review_${reviewWeeks}`,
+    phase: "submitted",
+    venue: "specialty",
+    reviewRoundsLeft: reviewWeeks,
+    stallWeeksRemaining: 0,
+    submissionCount: 1,
+  };
+  let reviewState: GameState = {
+    ...recruitment,
+    research: {
+      ...recruitment.research,
+      activeProjectId: undefined,
+      researchPoints: 0,
+      projects: [submitted],
+      publications: [],
+      posters: 0,
+    },
+  };
+  const identical = tickResearch(reviewState);
+  assert(
+    JSON.stringify(identical) === JSON.stringify(tickResearch(reviewState)),
+    `research tick lost determinism for ${reviewWeeks}-week review`,
+  );
+  for (let week = 1; week < reviewWeeks; week += 1) {
+    reviewState = tickResearch(reviewState);
+    assert(
+      reviewState.research.projects[0].phase === "submitted",
+      `${reviewWeeks}-week review resolved after only ${week} ticks`,
+    );
+  }
+  reviewState = tickResearch(reviewState);
+  assert(
+    reviewState.research.projects[0].phase !== "submitted",
+    `${reviewWeeks}-week review did not resolve on tick ${reviewWeeks}`,
+  );
+}
+
+// A selected submission keeps its authored submitted-phase risk producers
+// while parked submissions do not manufacture parallel lotteries.
+let submittedRiskSeed: GameState | undefined;
+for (let candidate = 1; candidate <= 5000 && !submittedRiskSeed; candidate += 1) {
+  const activeSubmission: ResearchProject = {
+    ...baseProject,
+    id: "active_submission_risk",
+    phase: "submitted",
+    venue: "specialty",
+    reviewRoundsLeft: 4,
+    risk: 1,
+    stallWeeksRemaining: 0,
+    submissionCount: 1,
+  };
+  const parkedSubmission: ResearchProject = {
+    ...activeSubmission,
+    id: "parked_submission_risk",
+  };
+  const probe: GameState = {
+    ...recruitment,
+    rngSeed: candidate,
+    rngCursor: 0,
+    research: {
+      ...recruitment.research,
+      activeProjectId: activeSubmission.id,
+      researchPoints: 0,
+      projects: [activeSubmission, parkedSubmission],
+      activity: [],
+    },
+  };
+  const resolved = tickResearch(probe);
+  if (resolved.research.activity.some((entry) => entry.eventId)) {
+    submittedRiskSeed = resolved;
+  }
+}
+assert(submittedRiskSeed, "selected submitted project never produced an authored event");
+assert(
+  submittedRiskSeed.research.activity
+    .filter((entry) => entry.eventId)
+    .every((entry) => entry.projectId === "active_submission_risk"),
+  "parked submitted project rolled authored risk",
+);
+
+// Once both visible symposium slots have been used, a later poster-only
+// acceptance closes honestly as an internal talk: no fabricated poster,
+// publication, or Reyes letter, and no poster effect in its activity record.
+const cappedPosterProject: ResearchProject = {
+  ...baseProject,
+  id: "poster_cap_probe",
+  phase: "submitted",
+  venue: "poster",
+  quality: 100,
+  reviewRoundsLeft: 1,
+  risk: 0,
+  stallWeeksRemaining: 0,
+  submissionCount: 1,
+  posterPresented: false,
+};
+const cappedPosterStart: GameState = {
+  ...recruitment,
+  flags: recruitment.flags.filter((flag) => flag !== "reyes_letter"),
+  research: {
+    ...recruitment.research,
+    activeProjectId: undefined,
+    researchPoints: 0,
+    projects: [cappedPosterProject],
+    publications: [],
+    posters: 2,
+    activity: [],
+  },
+};
+const cappedPosterResult = tickResearch(cappedPosterStart);
+const cappedPosterActivity = cappedPosterResult.research.activity.find(
+  (entry) => entry.projectId === cappedPosterProject.id && entry.kind === "accepted",
+);
+assert(
+  cappedPosterResult.research.posters === 2 &&
+    cappedPosterResult.research.publications.length === 0 &&
+    !cappedPosterResult.flags.includes("reyes_letter"),
+  "poster cap fabricated an output or first-author letter",
+);
+assert(
+  cappedPosterActivity?.title.en === "Internal lab presentation" &&
+    cappedPosterActivity.title.zh === "内部组会汇报" &&
+    cappedPosterActivity.effects?.posters === undefined,
+  "capped poster outcome was not truthfully bilingual and effect-free",
+);
+
+// Summer Research is not a generic stat-only break: each authored turn moves
+// the selected real project through the shared phase/quality pipeline.
+let summer: GameState = {
+  ...recruitment,
+  semesterIndex: 1,
+  screen: "breakChapter",
+  pendingBreakId: "summer_research",
+  breakTurn: 0,
+  research: {
+    ...recruitment.research,
+    researchPoints: 0,
+    projects: [{
+      ...baseProject,
+      id: "summer_probe",
+      progress: 70,
+      stallWeeksRemaining: 0,
+    }],
+    activeProjectId: "summer_probe",
+  },
+};
+const fakeSummer = takeBreakAction(summer, "summer_research_fake");
+assert(fakeSummer === summer, "fake prefixed summer action mutated the research project");
+const completedSummerProbe: GameState = { ...summer, breakTurn: 3 };
+assert(
+  takeBreakAction(completedSummerProbe, "summer_research_protocol") === completedSummerProbe,
+  "completed summer chapter accepted a fourth research action",
+);
+const summerBefore = summer.research.activity.length;
+const summerTrustBefore = summer.research.reputationInLab;
+const summerTrack = BREAK_TRACKS.find((track) => track.id === "summer_research");
+assert(summerTrack, "summer research break missing");
+for (let turn = 0; turn < 3; turn += 1) {
+  summer = takeBreakAction(summer, summerTrack.actions[turn].id);
+}
+const summerProject = summer.research.projects.find((entry) => entry.id === "summer_probe");
+assert(
+  summerProject?.phase === "analysis" && summerProject.progress === 76,
+  `three summer research turns did not share the phase FSM exactly (${summerProject?.phase}/${summerProject?.progress})`,
+);
+assert(
+  summer.research.activity.length >= summerBefore + 4,
+  "summer research project movement was not visibly attributed",
+);
+assert(
+  summer.research.reputationInLab === summerTrustBefore + 12,
+  "three summer research turns did not grant exactly 12 lab trust",
+);
+
+let summerRecruit: GameState = {
+  ...fresh,
+  semesterIndex: 1,
+  screen: "breakChapter",
+  pendingBreakId: "summer_research",
+  breakTurn: 0,
+  stats: { ...fresh.stats, knowledge: 45 },
+  research: {
+    ...fresh.research,
+    reputationInLab: 28,
+    labOffers: [],
+    activity: [],
+  },
+};
+summerRecruit = takeBreakAction(summerRecruit, summerTrack.actions[0].id);
+assert(
+  summerRecruit.research.reputationInLab === 32 &&
+    summerRecruit.research.labOffers.length > 0 &&
+    summerRecruit.research.activity.some((entry) => entry.kind === "offer"),
+  "summer research without a lab did not visibly build trust and produce an eligible offer",
+);
+
 console.log(
-  "G12 PASS: V1 migration sanitized; complete V2 validated; future/malformed fixtures refused without throw; RNG recovered",
+  "G12 PASS: V1/P1/P2 migration sanitized; complete V2 validated; future/malformed refused; P3 research clocks deterministic",
 );

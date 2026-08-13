@@ -51,6 +51,7 @@ export type Screen =
   | "semesterOpen"
   | "planning"
   | "event"
+  | "researchDashboard"
   | "weeklySummary"
   | "boss"
   | "breakChapter"
@@ -221,6 +222,56 @@ export type ProjectPhase =
 
 export type ResearchVenue = "poster" | "regional" | "specialty" | "top";
 
+export type ResearchReviewOutcome =
+  | "accepted"
+  | "minor_revision"
+  | "major_revision"
+  | "rejected";
+
+export type ResearchActivityKind =
+  | "offer"
+  | "lab_joined"
+  | "project_started"
+  | "phase"
+  | "risk"
+  | "event"
+  | "review"
+  | "resubmitted"
+  | "poster"
+  | "accepted"
+  | "abandoned";
+
+/** The exact, player-visible arithmetic behind a research-system roll. */
+export type ResearchRollBreakdown = {
+  kind: "quality" | "risk" | "review";
+  base: number;
+  random: number;
+  modifiers: number;
+  total: number;
+  outcome: string;
+};
+
+/** Dashboard history makes authored setbacks and review luck non-silent. */
+export type ResearchActivity = {
+  id: string;
+  kind: ResearchActivityKind;
+  projectId?: string;
+  eventId?: string;
+  title: LocalizedText;
+  text: LocalizedText;
+  effects?: StatBlock & {
+    progress?: number;
+    quality?: number;
+    researchPoints?: number;
+    reputationInLab?: number;
+    stallWeeks?: number;
+    posters?: number;
+  };
+  semesterId: number;
+  weekInSemester: number;
+  roll?: ResearchRollBreakdown;
+};
+
 export type ResearchProject = {
   id: string;
   templateId: string;
@@ -232,6 +283,12 @@ export type ResearchProject = {
   risk: number;
   venue?: ResearchVenue;
   reviewRoundsLeft?: number;
+  stallWeeksRemaining: number;
+  submissionCount: number;
+  resubmissions: number;
+  /** One poster maximum per project, regardless of later resubmission venue. */
+  posterPresented: boolean;
+  lastReviewOutcome?: ResearchReviewOutcome;
 };
 
 export type Publication = {
@@ -251,6 +308,12 @@ export type ResearchState = {
   posters: number;
   grantsWon: string[];
   reputationInLab: number;
+  /** Labs made visible by the recruitment threshold, before commitment. */
+  labOffers: string[];
+  /** The one project that receives queued `lab_work` effort. */
+  activeProjectId?: string;
+  /** Attributed, bilingual research history shown by the dashboard. */
+  activity: ResearchActivity[];
 };
 
 export type NpcState = {

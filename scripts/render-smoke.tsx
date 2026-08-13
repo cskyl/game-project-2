@@ -6,6 +6,7 @@ import { LangContext, tr, UI, withPartner } from "../src/i18n";
 import { StartScreen } from "../src/components/StartScreen";
 import { GameLayout } from "../src/components/GameLayout";
 import { PlanningScreen } from "../src/components/PlanningScreen";
+import { ResearchDashboard } from "../src/components/ResearchDashboard";
 import { SemesterOpen } from "../src/components/SemesterOpen";
 import { BreakChapter } from "../src/components/BreakChapter";
 import { EventPanel } from "../src/components/EventPanel";
@@ -58,6 +59,131 @@ for (const lang of ["en", "zh"] as Lang[]) {
       },
     ],
   };
+  const researchRecruitmentState = {
+    ...g,
+    screen: "researchDashboard" as const,
+    semesterIndex: 1,
+    stats: { ...g.stats, knowledge: 45 },
+    research: {
+      ...g.research,
+      reputationInLab: 30,
+      labOffers: ["reyes_biomaterials"],
+    },
+  };
+  const researchActiveState = {
+    ...g,
+    screen: "researchDashboard" as const,
+    semesterIndex: 4,
+    research: {
+      ...g.research,
+      researchPoints: 20,
+      labId: "reyes_biomaterials",
+      reputationInLab: 52,
+      labOffers: ["reyes_biomaterials"],
+      activeProjectId: "project_fixture",
+      projects: [
+        {
+          id: "project_fixture",
+          templateId: "bond_aging_cycles",
+          title: {
+            en: "Bond Strength After Artificial Aging",
+            zh: "人工老化后的粘接强度",
+          },
+          phase: "analysis" as const,
+          progress: 63,
+          quality: 74,
+          weeksInPhase: 2,
+          risk: 0.12,
+          stallWeeksRemaining: 2,
+          submissionCount: 0,
+          resubmissions: 0,
+        },
+      ],
+      publications: [
+        {
+          id: "publication_fixture",
+          projectId: "accepted_fixture",
+          title: { en: "A Careful Result", zh: "一个克制而可靠的结果" },
+          venue: "regional" as const,
+          firstAuthor: true,
+          quality: 72,
+        },
+      ],
+      posters: 1,
+      activity: [
+        {
+          id: "research_activity_fixture",
+          kind: "event" as const,
+          eventId: "research_failed_replication",
+          projectId: "project_fixture",
+          title: { en: "The Effect Does Not Come Back", zh: "那个效应没有再次出现" },
+          text: {
+            en: "The replication is flat, and the honest result becomes narrower.",
+            zh: "重复实验没有效应，诚实的结果也因此变得更克制。",
+          },
+          semesterId: 5,
+          weekInSemester: 2,
+        },
+        {
+          id: "research_review_fixture",
+          kind: "review" as const,
+          projectId: "project_fixture",
+          title: { en: "Major revision", zh: "大修" },
+          text: {
+            en: "The letter is long because someone read closely.",
+            zh: "信很长，是因为有人真的认真读了。",
+          },
+          semesterId: 5,
+          weekInSemester: 3,
+          roll: {
+            kind: "review" as const,
+            base: 58,
+            random: 7,
+            modifiers: 4,
+            total: 69,
+            outcome: "major_revision",
+          },
+        },
+        {
+          id: "research_poster_fixture",
+          kind: "poster" as const,
+          projectId: "project_fixture",
+          title: { en: "Poster presentation", zh: "研究海报展示" },
+          text: {
+            en: "The project earns a visible poster presentation.",
+            zh: "这个项目获得了一次公开的研究海报展示。",
+          },
+          semesterId: 5,
+          weekInSemester: 4,
+          effects: { posters: 1 },
+        },
+        {
+          id: "research_risk_fixture",
+          kind: "risk" as const,
+          projectId: "project_fixture",
+          title: { en: "Risk check: steady", zh: "风险检定：平稳" },
+          text: {
+            en: "The project stays on course this week.",
+            zh: "项目本周按计划推进。",
+          },
+          semesterId: 5,
+          weekInSemester: 5,
+          roll: {
+            kind: "risk" as const,
+            base: 12,
+            random: 47,
+            modifiers: 0,
+            total: 47,
+            outcome: "steady",
+          },
+        },
+      ],
+    },
+  };
+  assert(
+    researchActiveState.research.researchPoints > 0,
+    `${lang}/researchActive fixture omitted queued effort`,
+  );
 
   const screens: Record<string, ReactNode> = {
     start: createElement(StartScreen, {
@@ -76,6 +202,28 @@ for (const lang of ["en", "zh"] as Lang[]) {
         onFinishWeek: noop,
       }),
     ),
+    researchRecruitment: createElement(ResearchDashboard, {
+      state: researchRecruitmentState,
+      onShowInterest: noop,
+      onJoinLab: noop,
+      onStartProject: noop,
+      onSelectProject: noop,
+      onLabWork: noop,
+      onResubmitProject: noop,
+      onAbandonProject: noop,
+      onReturn: noop,
+    }),
+    researchActive: createElement(ResearchDashboard, {
+      state: researchActiveState,
+      onShowInterest: noop,
+      onJoinLab: noop,
+      onStartProject: noop,
+      onSelectProject: noop,
+      onLabWork: noop,
+      onResubmitProject: noop,
+      onAbandonProject: noop,
+      onReturn: noop,
+    }),
     semesterOpen: createElement(SemesterOpen, {
       state: g,
       onChoose: noop,
@@ -179,6 +327,33 @@ for (const lang of ["en", "zh"] as Lang[]) {
         html.includes(V2_UI_TEXT.breakKicker[lang]),
         `${lang}/${name} omitted localized break chrome`,
       );
+    }
+    if (name === "researchRecruitment") {
+      assert(
+        html.includes(V2_UI_TEXT.labRecruitment[lang]) &&
+          html.includes(V2_UI_TEXT.requirements[lang]) &&
+          html.includes(V2_UI_TEXT.joinLab[lang]),
+        `${lang}/researchRecruitment omitted requirements or recruitment controls`,
+      );
+    }
+    if (name === "researchActive") {
+      for (const [label, expected] of [
+        ["project quality", V2_UI_TEXT.projectQuality[lang]],
+        ["setback attribution", V2_UI_TEXT.researchSetback[lang]],
+        ["review attribution", V2_UI_TEXT.researchReviewOutcome[lang]],
+        ["roll breakdown", V2_UI_TEXT.rollBreakdown[lang]],
+        ["risk threshold", V2_UI_TEXT.rollTriggerThreshold[lang]],
+        ["author role", V2_UI_TEXT.firstAuthor[lang]],
+        ["poster attribution", V2_UI_TEXT.posterPresentation[lang]],
+        ["effect attribution", V2_UI_TEXT.changesThisResearchActivity[lang]],
+        ["queued-effort lock", V2_UI_TEXT.queuedResearchEffort[lang].slice(0, 18)],
+        ["stall lock", V2_UI_TEXT.projectStalled[lang].split("{")[0]],
+      ] as const) {
+        assert(
+          html.includes(expected),
+          `${lang}/researchActive omitted ${label}`,
+        );
+      }
     }
   }
   console.log(`  ${lang}: rendered ${Object.keys(screens).length} screens OK`);

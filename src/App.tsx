@@ -6,24 +6,33 @@ import { EndingScreen } from "./components/EndingScreen";
 import { EventPanel } from "./components/EventPanel";
 import { GameLayout } from "./components/GameLayout";
 import { PlanningScreen } from "./components/PlanningScreen";
+import { ResearchDashboard } from "./components/ResearchDashboard";
 import { SemesterOpen } from "./components/SemesterOpen";
 import { StartScreen } from "./components/StartScreen";
 import { WeeklySummary } from "./components/WeeklySummary";
 import { BOSSES } from "./data/bosses";
+import { V2_UI_TEXT } from "./data/uiText";
 import {
   advanceAfterBoss,
   beginSemester,
   chooseAction,
   chooseBreakTrack,
   chooseElective,
+  closeResearchDashboard,
   continueAfterEvent,
   continueAfterWeeklySummary,
   finishWeek,
   isFinalSemester,
+  joinResearchLab,
   newGame,
+  openResearchDashboard,
   playCard,
   resolveBoss,
   resolveEventChoice,
+  abandonResearchProject,
+  resubmitResearchProject,
+  selectActiveResearchProject,
+  startResearchProject,
   takeBreakAction,
 } from "./game/engine";
 import { getEnding, getPendingEvent } from "./game/selectors";
@@ -150,11 +159,36 @@ export default function App() {
         )}
 
         {game.screen === "planning" && (
-          <PlanningScreen
+          <>
+            <div className="planning-research-link">
+              <button
+                className="btn ghost"
+                type="button"
+                onClick={() => apply(openResearchDashboard)}
+              >
+                {ctx.t(V2_UI_TEXT.openResearchDashboard)}
+              </button>
+            </div>
+            <PlanningScreen
+              state={game}
+              onAction={(id) => apply((s) => chooseAction(s, id))}
+              onPlayCard={(id) => apply((s) => playCard(s, id))}
+              onFinishWeek={() => apply(finishWeek)}
+            />
+          </>
+        )}
+
+        {game.screen === "researchDashboard" && (
+          <ResearchDashboard
             state={game}
-            onAction={(id) => apply((s) => chooseAction(s, id))}
-            onPlayCard={(id) => apply((s) => playCard(s, id))}
-            onFinishWeek={() => apply(finishWeek)}
+            onShowInterest={() => apply((s) => chooseAction(s, "research_interest"))}
+            onJoinLab={(id) => apply((s) => joinResearchLab(s, id))}
+            onStartProject={(id) => apply((s) => startResearchProject(s, id))}
+            onSelectProject={(id) => apply((s) => selectActiveResearchProject(s, id))}
+            onLabWork={() => apply((s) => chooseAction(s, "lab_work"))}
+            onResubmitProject={(id) => apply((s) => resubmitResearchProject(s, id))}
+            onAbandonProject={(id) => apply((s) => abandonResearchProject(s, id))}
+            onReturn={() => apply(closeResearchDashboard)}
           />
         )}
 

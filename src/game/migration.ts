@@ -11,6 +11,7 @@ import type {
   MatchApplication,
   NpcState,
   Publication,
+  ResearchActivity,
   ResearchProject,
   ResearchState,
   SimLabLogEntry,
@@ -81,6 +82,7 @@ const SCREENS = new Set<GameState["screen"]>([
   "semesterOpen",
   "planning",
   "event",
+  "researchDashboard",
   "weeklySummary",
   "boss",
   "breakChapter",
@@ -109,6 +111,19 @@ const PROJECT_PHASES = new Set([
   "abandoned",
 ]);
 const RESEARCH_VENUES = new Set(["poster", "regional", "specialty", "top"]);
+const RESEARCH_ACTIVITY_KINDS = new Set([
+  "offer",
+  "lab_joined",
+  "project_started",
+  "phase",
+  "risk",
+  "event",
+  "review",
+  "resubmitted",
+  "poster",
+  "accepted",
+  "abandoned",
+]);
 const CASE_OUTCOMES = new Set(["excellent", "good", "rough", "bad"]);
 const SIM_LAB_RESULTS = new Set(["commendation", "pass", "rough"]);
 const MATCH_RESULTS = new Set(["accepted", "waitlisted", "rejected"]);
@@ -195,7 +210,16 @@ function isResearchProject(value: unknown): value is ResearchProject {
     isFiniteNumber(value.risk) &&
     (value.venue === undefined ||
       (typeof value.venue === "string" && RESEARCH_VENUES.has(value.venue))) &&
-    (value.reviewRoundsLeft === undefined || isFiniteNumber(value.reviewRoundsLeft))
+    (value.reviewRoundsLeft === undefined || isFiniteNumber(value.reviewRoundsLeft)) &&
+    isNonNegativeInteger(value.stallWeeksRemaining) &&
+    isNonNegativeInteger(value.submissionCount) &&
+    isNonNegativeInteger(value.resubmissions) &&
+    typeof value.posterPresented === "boolean" &&
+    (value.lastReviewOutcome === undefined ||
+      value.lastReviewOutcome === "accepted" ||
+      value.lastReviewOutcome === "minor_revision" ||
+      value.lastReviewOutcome === "major_revision" ||
+      value.lastReviewOutcome === "rejected")
   );
 }
 
@@ -212,6 +236,51 @@ function isPublication(value: unknown): value is Publication {
   );
 }
 
+function isResearchActivityEffect(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  const numericKeys = new Set([
+    ...STAT_KEYS,
+    "progress",
+    "quality",
+    "researchPoints",
+    "reputationInLab",
+    "stallWeeks",
+    "posters",
+  ]);
+  return Object.entries(value).every(
+    ([key, amount]) => numericKeys.has(key) && isFiniteNumber(amount),
+  );
+}
+
+function isResearchRoll(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    (value.kind === "quality" || value.kind === "risk" || value.kind === "review") &&
+    isFiniteNumber(value.base) &&
+    isFiniteNumber(value.random) &&
+    isFiniteNumber(value.modifiers) &&
+    isFiniteNumber(value.total) &&
+    typeof value.outcome === "string"
+  );
+}
+
+function isResearchActivity(value: unknown): value is ResearchActivity {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.kind === "string" &&
+    RESEARCH_ACTIVITY_KINDS.has(value.kind) &&
+    isOptionalString(value.projectId) &&
+    isOptionalString(value.eventId) &&
+    isLocalizedText(value.title) &&
+    isLocalizedText(value.text) &&
+    (value.effects === undefined || isResearchActivityEffect(value.effects)) &&
+    isFiniteNumber(value.semesterId) &&
+    isFiniteNumber(value.weekInSemester) &&
+    (value.roll === undefined || isResearchRoll(value.roll))
+  );
+}
+
 function isResearchState(value: unknown): value is ResearchState {
   return (
     isRecord(value) &&
@@ -223,7 +292,11 @@ function isResearchState(value: unknown): value is ResearchState {
     value.publications.every(isPublication) &&
     isFiniteNumber(value.posters) &&
     isStringArray(value.grantsWon) &&
-    isFiniteNumber(value.reputationInLab)
+    isFiniteNumber(value.reputationInLab) &&
+    isStringArray(value.labOffers) &&
+    isOptionalString(value.activeProjectId) &&
+    Array.isArray(value.activity) &&
+    value.activity.every(isResearchActivity)
   );
 }
 
@@ -433,6 +506,9 @@ function migrateV1(value: UnknownRecord): SaveLoadResult {
       posters: 0,
       grantsWon: [],
       reputationInLab: 0,
+      labOffers: [],
+      activeProjectId: undefined,
+      activity: [],
     },
     caseLog: [],
     simLabLog: [],
@@ -505,6 +581,44 @@ export function migrateSave(value: unknown): SaveLoadResult {
     if (hydrated.breakTurn === undefined) {
       hydrated.breakTurn = 0;
       hydratedDefaults = true;
+    }
+    // P0-P2 V2 saves have the research skeleton but predate P3's dashboard,
+    // activity attribution, and project-clock fields. Hydrate only absent
+    // values; malformed values remain visible to the strict validator below.
+    if (isRecord(hydrated.research)) {
+      const research: UnknownRecord = { ...hydrated.research };
+      if (research.labOffers === undefined) {
+        research.labOffers = [];
+        hydratedDefaults = true;
+      }
+      if (research.activity === undefined) {
+        research.activity = [];
+        hydratedDefaults = true;
+      }
+      if (Array.isArray(research.projects)) {
+        research.projects = research.projects.map((candidate) => {
+          if (!isRecord(candidate)) return candidate;
+          const project: UnknownRecord = { ...candidate };
+          if (project.stallWeeksRemaining === undefined) {
+            project.stallWeeksRemaining = 0;
+            hydratedDefaults = true;
+          }
+          if (project.submissionCount === undefined) {
+            project.submissionCount = 0;
+            hydratedDefaults = true;
+          }
+          if (project.resubmissions === undefined) {
+            project.resubmissions = 0;
+            hydratedDefaults = true;
+          }
+          if (project.posterPresented === undefined) {
+            project.posterPresented = false;
+            hydratedDefaults = true;
+          }
+          return project;
+        });
+      }
+      hydrated.research = research;
     }
     return isV2State(hydrated)
       ? { ok: true, state: hydrated, migrated: hydratedDefaults }

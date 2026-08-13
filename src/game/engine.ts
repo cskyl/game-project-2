@@ -50,6 +50,19 @@ import {
   openBreakChapter,
   takeBreakActionState,
 } from "./systems/breaks";
+import {
+  abandonResearchProjectState,
+  applySummerResearchBreakState,
+  applyResearchActionState,
+  closeResearchDashboardState,
+  isResearchActionAvailable,
+  joinResearchLabState,
+  openResearchDashboardState,
+  resubmitResearchProjectState,
+  selectActiveResearchProjectState,
+  startResearchProjectState,
+  tickResearch,
+} from "./systems/research";
 import type {
   Action,
   Boss,
@@ -93,6 +106,7 @@ export const isFinalSemester = (s: GameState): boolean =>
 // ---------------------------------------------------------------------------
 
 export function isActionUnlocked(action: Action, state: GameState): boolean {
+  if (!isResearchActionAvailable(state, action.id)) return false;
   if (!action.unlock) return true;
   return evaluateCondition(state.stats, state.flags, currentSemesterId(state), action.unlock);
 }
@@ -106,7 +120,11 @@ export type ActionStatus = {
 };
 
 export function actionStatus(action: Action, state: GameState): ActionStatus {
-  const unlocked = isActionUnlocked(action, state);
+  const isResearchAction = action.id === "research_interest" || action.id === "lab_work";
+  const correctScreen = isResearchAction
+    ? state.screen === "researchDashboard"
+    : state.screen === "planning";
+  const unlocked = correctScreen && isActionUnlocked(action, state);
   const enoughAp = state.actionPointsRemaining >= action.cost;
   const enoughMoney =
     !action.moneyCost || state.stats.money - action.moneyCost >= MONEY_MIN;
@@ -120,6 +138,7 @@ export function actionStatus(action: Action, state: GameState): ActionStatus {
 }
 
 export function playCard(state: GameState, cardId: string): GameState {
+  if (state.screen !== "planning") return state;
   if (state.cardsPlayedThisWeek >= MAX_CARDS_PLAYED_PER_WEEK) return state;
   if (!state.weeklyCards.includes(cardId)) return state;
   const card = CARDS_BY_ID[cardId];
@@ -200,6 +219,9 @@ export function newGame(
       posters: 0,
       grantsWon: [],
       reputationInLab: 0,
+      labOffers: [],
+      activeProjectId: undefined,
+      activity: [],
     },
     caseLog: [],
     simLabLog: [],
@@ -263,10 +285,26 @@ export function chooseBreakTrack(state: GameState, trackId: string): GameState {
 
 /** Take one break action. The third action opens the following semester. */
 export function takeBreakAction(state: GameState, actionId: string): GameState {
-  return takeBreakActionState(state, actionId);
+  const withResearch = applySummerResearchBreakState(state, actionId);
+  return takeBreakActionState(withResearch, actionId);
 }
 
+export const openResearchDashboard = openResearchDashboardState;
+export const closeResearchDashboard = closeResearchDashboardState;
+export const joinResearchLab = joinResearchLabState;
+export const startResearchProject = startResearchProjectState;
+export const selectActiveResearchProject = selectActiveResearchProjectState;
+export const resubmitResearchProject = resubmitResearchProjectState;
+export const abandonResearchProject = abandonResearchProjectState;
+
 export function chooseAction(state: GameState, actionId: string): GameState {
+  const isResearchAction = actionId === "research_interest" || actionId === "lab_work";
+  if (
+    (isResearchAction && state.screen !== "researchDashboard") ||
+    (!isResearchAction && state.screen !== "planning")
+  ) {
+    return state;
+  }
   const action = ACTIONS_BY_ID[actionId];
   if (!action) return state;
   const status = actionStatus(action, state);
@@ -278,6 +316,7 @@ export function chooseAction(state: GameState, actionId: string): GameState {
     kind: "action",
     text: action.title,
   });
+  next = applyResearchActionState(next, action.id);
   next = transitionState(next, {
     actionPointsRemaining: next.actionPointsRemaining - action.cost,
   });
@@ -285,6 +324,7 @@ export function chooseAction(state: GameState, actionId: string): GameState {
 }
 
 export function finishWeek(state: GameState): GameState {
+  if (state.screen !== "planning") return state;
   const thr = computeThresholds(state.stats, state.difficulty);
   const thresholdEffects = applyWeeklyThresholdHooks(
     thr.effects,
@@ -316,6 +356,10 @@ export function finishWeek(state: GameState): GameState {
       text: SKILL_DRIFT_LABEL,
     });
   }
+
+  // Authoritative §3.2 step 4.3: research resolves after drift and before all
+  // later weekly systems (finance/wellness/cases arrive in their own phases).
+  next = tickResearch(next);
 
   let flags = next.flags;
   if (thr.hitCriticalStress && !flags.includes("hit_critical_stress")) {
