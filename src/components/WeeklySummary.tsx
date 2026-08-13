@@ -1,5 +1,6 @@
 import { diffStats, WARNING_MESSAGES } from "../game/balance";
 import { currentSemester } from "../game/selectors";
+import { V2_UI_TEXT } from "../data/uiText";
 import { fmt, useLang } from "../i18n";
 import type { GameState } from "../game/types";
 import { EffectChips } from "./EffectChips";
@@ -15,6 +16,12 @@ export function WeeklySummary({
   const changes = diffStats(state.weekStartStats, state.stats);
   const sem = currentSemester(state);
   const hasChanges = Object.keys(changes).length > 0;
+  const driftEntries = state.log.filter(
+    (entry) =>
+      entry.kind === "drift" &&
+      entry.semesterId === state.semesterIndex + 1 &&
+      entry.weekInSemester === state.weekInSemester,
+  );
 
   return (
     <div className="panel summary fade-in">
@@ -31,6 +38,18 @@ export function WeeklySummary({
           <p className="muted">{ui.noChanges}</p>
         )}
       </section>
+
+      {driftEntries.length > 0 && (
+        <section className="summary-section drift-summary">
+          <h3>{t(V2_UI_TEXT.skillDriftHeading)}</h3>
+          <p className="muted">{t(V2_UI_TEXT.skillDriftExplanation)}</p>
+          {driftEntries.map((entry) =>
+            entry.effects ? (
+              <EffectChips key={entry.id} effects={entry.effects} />
+            ) : null,
+          )}
+        </section>
+      )}
 
       {state.weekWarnings.length > 0 && (
         <section className="summary-section warnings">

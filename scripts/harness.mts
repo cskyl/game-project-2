@@ -5,7 +5,7 @@ import { ENDINGS } from "../src/data/endings";
 import { EVENTS } from "../src/data/events";
 import { SEMESTERS } from "../src/data/semesters";
 import { careerReadiness, evaluateCondition } from "../src/game/balance";
-import { MONEY_MAX, MONEY_MIN } from "../src/game/constants";
+import { ALL_STATS, MONEY_MAX, MONEY_MIN } from "../src/game/constants";
 import {
   actionStatus,
   advanceAfterBoss,
@@ -32,6 +32,13 @@ import {
   resetModifierRegistryForTests,
 } from "../src/game/modifiers";
 import { nextRandom } from "../src/game/rng";
+import {
+  actionPointBreakdown,
+  applySoftCaps,
+  bossSemesterRamp,
+  skillDriftEffects,
+  softCapMultiplier,
+} from "../src/game/systems/progression";
 import type {
   Action,
   Difficulty,
@@ -44,6 +51,13 @@ declare const process: { argv: string[] };
 
 const GUARD_LIMIT = 20_000;
 const DIFFICULTIES: Difficulty[] = ["easy", "normal", "hard"];
+const CR_COMPONENT_STATS = [
+  "knowledge",
+  "handSkill",
+  "clinicalSense",
+  "empathy",
+  "confidence",
+] as const;
 
 type BotMode = "ordered" | "chaos" | "minmax";
 type Bot = {
@@ -504,19 +518,106 @@ function foundationChecks(): void {
   const sequenceB = randomSequence(0x1234_5679);
   assert(JSON.stringify(sequenceA) === JSON.stringify(sequenceAReplay), "direct RNG replay diverged");
   assert(JSON.stringify(sequenceA) !== JSON.stringify(sequenceB), "distinct RNG seeds produced the same sequence");
+
+  const softCapBands = [
+    [0, 1],
+    [54, 1],
+    [55, 0.75],
+    [69, 0.75],
+    [70, 0.5],
+    [79, 0.5],
+    [80, 0.3],
+    [89, 0.3],
+    [90, 0.15],
+    [100, 0.15],
+  ] as const;
+  for (const [current, expected] of softCapBands) {
+    assert(
+      softCapMultiplier(current) === expected,
+      `P1 soft-cap multiplier at ${current}: expected ${expected}, observed ${softCapMultiplier(current)}`,
+    );
+  }
+  const capProbeState = newGame("normal", "Soft-cap Probe", { seed: 42 });
+  const capProbeStats = { ...capProbeState.stats, knowledge: 90, mood: 90 };
+  const capped = applySoftCaps(
+    capProbeStats,
+    { knowledge: 6, handSkill: -7, mood: 6 },
+    [],
+  );
+  assert(capped.knowledge === 1, "P1 soft-cap +1 floor failed");
+  assert(capped.handSkill === -7, "P1 soft cap changed a negative skill delta");
+  assert(capped.mood === 6, "P1 soft cap changed an uncapped resource delta");
+
+  const driftStats = {
+    ...capProbeState.stats,
+    knowledge: 55,
+    handSkill: 41,
+    clinicalSense: 40,
+  };
+  const earlyDrift = skillDriftEffects("preclinical", driftStats, {
+    knowledge: 1,
+  });
+  assert(earlyDrift.knowledge === undefined, "P1 drift ignored a positive weekly gain");
+  assert(earlyDrift.handSkill === -1, "P1 preclinical drift must be -1");
+  assert(earlyDrift.clinicalSense === undefined, "P1 drift crossed its floor of 40");
+  const clinicalDrift = skillDriftEffects("clinical", driftStats, {});
+  assert(clinicalDrift.knowledge === -2, "P1 clinical drift must be -2");
+  assert(clinicalDrift.handSkill === -1, "P1 drift must stop exactly at floor 40");
+  const advancedDrift = skillDriftEffects("advanced", driftStats, {});
+  assert(advancedDrift.knowledge === -2, "P1 advanced drift must be -2");
+
+  for (const [difficulty, expected] of [
+    ["easy", 7],
+    ["normal", 6],
+    ["hard", 5],
+  ] as const) {
+    assert(
+      actionPointBreakdown(difficulty, 1, 50, []).total === expected,
+      `P1 ${difficulty} AP base must be ${expected}`,
+    );
+  }
+  assert(actionPointBreakdown("normal", 3, 50, []).total === 6, "P1 AP rose before semester 4");
+  assert(actionPointBreakdown("normal", 4, 50, []).total === 7, "P1 semester-4 AP milestone failed");
+  assert(actionPointBreakdown("normal", 7, 50, []).total === 7, "P1 AP rose before semester 8");
+  assert(actionPointBreakdown("normal", 8, 50, []).total === 8, "P1 semester-8 AP milestone failed");
+  assert(actionPointBreakdown("normal", 8, 19, []).total === 7, "P1 low-stamina AP penalty failed");
+  assert(actionPointBreakdown("normal", 8, 20, []).total === 8, "P1 low-stamina penalty included stamina 20");
+
+  const ramps = Array.from({ length: 20 }, (_, index) => bossSemesterRamp(index + 1));
+  assert(ramps[0] === 0, "P1 boss ramp must start at zero");
+  assert(ramps.every((value) => value <= 0 && value >= -8), "P1 boss ramp escaped [-8, 0]");
+  assert(
+    ramps.every((value, index) => index === 0 || value <= ramps[index - 1]),
+    "P1 boss ramp is not monotonic non-increasing",
+  );
+  assert(ramps[ramps.length - 1] === -8, "P1 boss ramp did not reach its documented -8 cap");
 }
 
 const quick = process.argv.includes("--quick");
 const seedsPerBotDifficulty = quick ? 1 : 40;
 const expectedPrimaryRuns = BOTS.length * DIFFICULTIES.length * seedsPerBotDifficulty;
 const endings = new Map<string, number>();
+const endingsByBot = new Map<string, Map<string, number>>();
 const eventsSeen = new Set<string>();
 const readiness: number[] = [];
+const readinessByBot = new Map<string, number[]>();
+const finalStats: GameState["stats"][] = [];
+const finalStatsByBot = new Map<string, GameState["stats"][]>();
 const decisions: number[] = [];
 const botActionCounts = new Map<string, Record<string, number>>();
 let completed = 0;
 let deterministicReplays = 0;
 let maxDecisions = 0;
+let maxReadinessRun:
+  | {
+      value: number;
+      botId: string;
+      difficulty: Difficulty;
+      seed: number;
+      endingId: string;
+      stats: GameState["stats"];
+    }
+  | undefined;
 
 contentChecks();
 foundationChecks();
@@ -538,6 +639,9 @@ const startedAt = performance.now();
 for (let botIndex = 0; botIndex < BOTS.length; botIndex += 1) {
   const bot = BOTS[botIndex];
   const aggregateActions: Record<string, number> = {};
+  const botReadiness: number[] = [];
+  const botEndings = new Map<string, number>();
+  const botFinalStats: GameState["stats"][] = [];
   for (
     let difficultyIndex = 0;
     difficultyIndex < DIFFICULTIES.length;
@@ -557,9 +661,24 @@ for (let botIndex = 0; botIndex < BOTS.length; botIndex += 1) {
       deterministicReplays += 1;
       maxDecisions = Math.max(maxDecisions, primary.trace.length);
       decisions.push(primary.trace.length);
-      readiness.push(careerReadiness(primary.finalState.stats));
+      const finalReadiness = careerReadiness(primary.finalState.stats);
+      readiness.push(finalReadiness);
+      botReadiness.push(finalReadiness);
+      finalStats.push(primary.finalState.stats);
+      botFinalStats.push(primary.finalState.stats);
       const endingId = primary.finalState.endingId ?? "missing";
+      if (!maxReadinessRun || finalReadiness > maxReadinessRun.value) {
+        maxReadinessRun = {
+          value: finalReadiness,
+          botId: bot.id,
+          difficulty,
+          seed,
+          endingId,
+          stats: primary.finalState.stats,
+        };
+      }
       endings.set(endingId, (endings.get(endingId) ?? 0) + 1);
+      botEndings.set(endingId, (botEndings.get(endingId) ?? 0) + 1);
       for (const eventId of primary.eventsSeen) eventsSeen.add(eventId);
       for (const [actionId, count] of Object.entries(primary.actionCounts)) {
         aggregateActions[actionId] = (aggregateActions[actionId] ?? 0) + count;
@@ -567,6 +686,9 @@ for (let botIndex = 0; botIndex < BOTS.length; botIndex += 1) {
     }
   }
   botActionCounts.set(bot.id, aggregateActions);
+  readinessByBot.set(bot.id, botReadiness);
+  endingsByBot.set(bot.id, botEndings);
+  finalStatsByBot.set(bot.id, botFinalStats);
 }
 
 assert(completed === expectedPrimaryRuns, `G3 expected ${expectedPrimaryRuns} runs`);
@@ -587,29 +709,114 @@ for (const [botId, counts] of botActionCounts) {
 
 const endingReport = [...endings]
   .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
-  .map(([id, count]) => `${id}=${count}`)
+  .map(
+    ([id, count]) =>
+      `${id}=${count} (${((count / completed) * 100).toFixed(1)}%)`,
+  )
   .join(", ");
-const maxEndingShare = Math.max(...endings.values()) / completed;
+const [mostCommonEndingId, mostCommonEndingCount] = [...endings].sort(
+  (left, right) => right[1] - left[1] || left[0].localeCompare(right[0]),
+)[0];
+const maxEndingShare = mostCommonEndingCount / completed;
+const readinessMean = mean(readiness);
+const readinessPopulationSd = standardDeviation(readiness);
+const readinessMax = Math.max(...readiness);
+const readinessByBotReport = BOTS.map((bot) => {
+  const values = readinessByBot.get(bot.id) ?? [];
+  return `${bot.id}=${mean(values).toFixed(2)}`;
+}).join(", ");
+const graduationStatsReport = ALL_STATS.map((stat) => {
+  const values = finalStats.map((stats) => stats[stat]);
+  return `${stat}=${mean(values).toFixed(2)}±${standardDeviation(values).toFixed(2)}`;
+}).join(", ");
+const crComponentsByBotReport = BOTS.map((bot) => {
+  const stats = finalStatsByBot.get(bot.id) ?? [];
+  const components = CR_COMPONENT_STATS.map((stat) =>
+    mean(stats.map((runStats) => runStats[stat])).toFixed(2),
+  );
+  return `${bot.id}[${components.join(",")}]`;
+}).join(" | ");
+const endingsByBotReport = BOTS.map((bot) => {
+  const counts = endingsByBot.get(bot.id) ?? new Map<string, number>();
+  const distribution = [...counts]
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .map(([id, count]) => `${id}=${count}`)
+    .join(",");
+  return `${bot.id}[${distribution}]`;
+}).join(" | ");
+assert(maxReadinessRun, "G2 missing max-readiness run diagnostics");
+const maxReadinessStatsReport = CR_COMPONENT_STATS
+  .map((stat) => `${stat}=${maxReadinessRun.stats[stat]}`)
+  .join(", ");
 const deadEvents = EVENTS.filter((event) => !eventsSeen.has(event.id)).map(
   (event) => event.id,
 );
 const elapsedSeconds = (performance.now() - startedAt) / 1_000;
 
 console.log(
-  `P0 ${quick ? "SMOKE" : "BALANCE"}: ${completed} primary + ${deterministicReplays} exact replays in ${elapsedSeconds.toFixed(2)}s`,
+  `P1 ${quick ? "SMOKE" : "BALANCE"}: ${completed} primary + ${deterministicReplays} exact replays in ${elapsedSeconds.toFixed(2)}s`,
 );
 console.log(
   `Content: events=${EVENTS.length}, cards=${CARDS.length}, endings=${ENDINGS.length}, actions=${ACTIONS.length}, bots=${BOTS.length}`,
 );
+console.log(
+  "P1 foundation PASS: modifier registry, soft-cap bands/floor/sign, drift, AP curve, boss ramp",
+);
 console.log(`Endings (${endings.size}): ${endingReport}`);
 console.log(
-  `Observed: CR mean=${mean(readiness).toFixed(1)} sd=${standardDeviation(readiness).toFixed(1)} max=${Math.max(...readiness)}; decisions median=${median(decisions)} max=${maxDecisions}`,
+  `Observed: CR mean=${readinessMean.toFixed(3)} population-sd=${readinessPopulationSd.toFixed(3)} max=${readinessMax.toFixed(3)}; decisions median=${median(decisions)} max=${maxDecisions}`,
+);
+console.log(`CR mean by bot: ${readinessByBotReport}`);
+console.log(`Graduation stats mean±population-SD: ${graduationStatsReport}`);
+console.log(
+  `CR component means by bot [knowledge,handSkill,clinicalSense,empathy,confidence]: ${crComponentsByBotReport}`,
+);
+console.log(`Endings by bot: ${endingsByBotReport}`);
+console.log(
+  `Max CR run: value=${maxReadinessRun.value} bot=${maxReadinessRun.botId} difficulty=${maxReadinessRun.difficulty} seed=${maxReadinessRun.seed} ending=${maxReadinessRun.endingId}; ${maxReadinessStatsReport}`,
 );
 console.log(
   `Coverage: events=${eventsSeen.size}/${EVENTS.length} (${((eventsSeen.size / EVENTS.length) * 100).toFixed(1)}%); dead=${deadEvents.length}; max ending=${(maxEndingShare * 100).toFixed(1)}%; max action=${(highestActionShare * 100).toFixed(1)}% (${highestActionLabel})`,
 );
-console.log("G1 DEFERRED P1/P7 | G2 DEFERRED P1 | G3 PASS: all bots terminate, guard <20000");
+if (!quick) {
+  const p1GateFailures: string[] = [];
+  if (endings.size < 10) {
+    p1GateFailures.push(
+      `G1 distinct endings: required >=10, observed ${endings.size}`,
+    );
+  }
+  if (maxEndingShare > 0.25) {
+    p1GateFailures.push(
+      `G1 max share: required <=25%, observed ${mostCommonEndingId} at ${(maxEndingShare * 100).toFixed(3)}% (${mostCommonEndingCount}/${completed})`,
+    );
+  }
+  if (readinessMean < 62 || readinessMean > 78) {
+    p1GateFailures.push(
+      `G2 CR mean: required [62, 78], observed ${readinessMean.toFixed(3)}`,
+    );
+  }
+  if (readinessPopulationSd < 8) {
+    p1GateFailures.push(
+      `G2 CR population SD: required >=8, observed ${readinessPopulationSd.toFixed(3)}`,
+    );
+  }
+  if (readinessMax >= 95) {
+    p1GateFailures.push(
+      `G2 CR max: required <95, observed ${readinessMax.toFixed(3)}`,
+    );
+  }
+  assert(
+    p1GateFailures.length === 0,
+    `${p1GateFailures.join("; ")}; endings: ${endingReport}; CR by bot: ${readinessByBotReport}`,
+  );
+}
+console.log(
+  quick
+    ? "G1/G2 DIAGNOSTIC ONLY: full-sweep P1 distribution assertions skipped"
+    : "G1 PASS: >=10 endings and max share <=25% | G2 PASS: CR mean [62,78], population SD >=8, max <95",
+);
+console.log("G3 PASS: all bots terminate, guard <20000");
 console.log("G4 DEFERRED P9 | G5 DEFERRED P3 | G6 DEFERRED P7 | G7 DEFERRED P6");
 console.log("G8 DEFERRED P6 | G9 DEFERRED P2 | G10 PASS: byte-identical final states");
 console.log("G11 EXTERNAL: build + validator | G12 PASS: V1 migration + future refusal");
-console.log(quick ? "SMOKE P0 OK" : "BALANCE P0 OK");
+console.log(quick ? "SMOKE P1 OK" : "BALANCE P1 OK");

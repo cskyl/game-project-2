@@ -7,6 +7,7 @@ import { GENERATED_EVENTS } from "../src/data/events.generated";
 import { SEED_EVENTS } from "../src/data/events.seed";
 import { EVENTS } from "../src/data/events";
 import { SEMESTERS } from "../src/data/semesters";
+import { SYSTEM_FLAGS } from "../src/data/systemFlags";
 import { V2_UI_TEXT } from "../src/data/uiText";
 import { ALL_STATS } from "../src/game/constants";
 import type {
@@ -163,6 +164,22 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
   ] as const;
 
   for (const [label, items] of registries) issues.push(...duplicateIssues(label, items));
+  if (ENDINGS.length !== 24) {
+    issues.push({ path: "endings", message: `expected frozen roster of 24, found ${ENDINGS.length}` });
+  }
+  for (const [label, count, matches] of [
+    ["state override", 2, (priority: number) => priority === 95],
+    ["career track", 12, (priority: number) => priority >= 88 && priority <= 92],
+    ["specialist build", 6, (priority: number) => priority >= 78 && priority <= 86],
+    ["relationship / finance", 2, (priority: number) => priority >= 60 && priority <= 70],
+    ["balanced fallback", 1, (priority: number) => priority === 50],
+    ["default fallback", 1, (priority: number) => priority === 0],
+  ] as const) {
+    const observed = ENDINGS.filter((ending) => matches(ending.priority)).length;
+    if (observed !== count) {
+      issues.push({ path: "endings", message: `expected ${count} ${label} endings, found ${observed}` });
+    }
+  }
   const semesterIds = SEMESTERS.map((semester) => ({ id: String(semester.id) }));
   issues.push(...duplicateIssues("semesters", semesterIds));
 
@@ -206,6 +223,13 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
   }
 
   const grantedFlags = new Set<string>(["hit_critical_stress"]);
+  const declaredSystemFlags = new Map(
+    SYSTEM_FLAGS.map((definition) => [definition.id, definition]),
+  );
+  for (const definition of SYSTEM_FLAGS) grantedFlags.add(definition.id);
+  for (const duplicate of findDuplicateIds(SYSTEM_FLAGS)) {
+    issues.push({ path: "systemFlags", message: `duplicate id \"${duplicate}\"` });
+  }
   const requiredFlags = new Set<string>();
   const collectConditionFlags = (condition?: EventCondition): void => {
     for (const flag of condition?.requiredFlags ?? []) requiredFlags.add(flag);
@@ -224,6 +248,12 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
   for (const flag of requiredFlags) {
     if (!grantedFlags.has(flag)) {
       issues.push({ path: "flags", message: `orphaned condition flag \"${flag}\" is never granted` });
+    }
+    const deferred = declaredSystemFlags.get(flag);
+    if (deferred) {
+      warnings.push(
+        `flag \"${flag}\" is declared for ${deferred.producer} in ${deferred.phase}`,
+      );
     }
   }
 

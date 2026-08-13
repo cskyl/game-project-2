@@ -37,6 +37,11 @@ import {
   initialRunTimestamp,
   transitionState,
 } from "./systems/state";
+import {
+  actionPointBreakdown,
+  bossSemesterRamp,
+  skillDriftEffects,
+} from "./systems/progression";
 import type {
   Action,
   Boss,
@@ -53,6 +58,11 @@ const RECOVERY_EVENT_ID = "well_recovery_week";
 const WEEKLY_LABEL: LocalizedText = {
   en: "Weekly adjustments",
   zh: "每周自动调整",
+};
+
+const SKILL_DRIFT_LABEL: LocalizedText = {
+  en: "Skill drift: core skills you did not train faded this week.",
+  zh: "技能回落：本周没有练到的核心能力有所生疏。",
 };
 
 const ACTIONS_BY_ID: Record<string, Action> = Object.fromEntries(
@@ -137,9 +147,13 @@ function startWeek(
     semesterIndex: opts.semesterIndex,
     weekInSemester: opts.weekInSemester,
     globalWeek: randomState.globalWeek + 1,
-    actionPointsRemaining:
-      DIFFICULTY[randomState.difficulty].actionPoints +
-      sumHookAdds(collectHooks(randomState), "apPerWeek"),
+    actionPointsRemaining: actionPointBreakdown(
+      randomState.difficulty,
+      opts.semesterIndex + 1,
+      randomState.stats.stamina,
+      collectHooks(randomState),
+    ).total,
+    weekGains: {},
     weekStartStats: { ...randomState.stats },
     weeklyCards: cards,
     cardsPlayedThisWeek: 0,
@@ -254,6 +268,20 @@ export function finishWeek(state: GameState): GameState {
     });
   }
 
+  const driftEffects = skillDriftEffects(
+    currentSemester(next).stage,
+    next.stats,
+    next.weekGains,
+  );
+  if (Object.keys(driftEffects).length > 0) {
+    next = applyEffects(next, driftEffects, {
+      scale: false,
+      log: true,
+      kind: "drift",
+      text: SKILL_DRIFT_LABEL,
+    });
+  }
+
   let flags = next.flags;
   if (thr.hitCriticalStress && !flags.includes("hit_critical_stress")) {
     flags = [...flags, "hit_critical_stress"];
@@ -361,6 +389,7 @@ export type BossBreakdown = {
   wellnessMod: number;
   stressMod: number;
   staminaBonus: number;
+  semesterRamp: number;
   base: number;
 };
 
@@ -371,8 +400,9 @@ export function bossBreakdown(boss: Boss, state: GameState): BossBreakdown {
   const wellnessMod = (wellness(s) - 50) * 0.2;
   const stressMod = s.stress >= 30 && s.stress <= 70 ? 5 : s.stress > 85 ? -8 : 0;
   const staminaBonus = s.stamina > 75 ? 5 : 0;
-  const base = weighted + wellnessMod + stressMod + staminaBonus;
-  return { weighted, wellnessMod, stressMod, staminaBonus, base };
+  const semesterRamp = bossSemesterRamp(boss.semesterId);
+  const base = weighted + wellnessMod + stressMod + staminaBonus + semesterRamp;
+  return { weighted, wellnessMod, stressMod, staminaBonus, semesterRamp, base };
 }
 
 /** Deterministic 0–100 readiness preview (no random roll). */

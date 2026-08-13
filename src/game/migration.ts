@@ -83,7 +83,14 @@ const SCREENS = new Set<GameState["screen"]>([
   "ending",
 ]);
 const BOSS_OUTCOMES = new Set(["great", "pass", "barely", "struggle"]);
-const LOG_KINDS = new Set(["action", "card", "event", "boss", "system"]);
+const LOG_KINDS = new Set([
+  "action",
+  "card",
+  "event",
+  "boss",
+  "system",
+  "drift",
+]);
 const PROJECT_PHASES = new Set([
   "idea",
   "pilot",

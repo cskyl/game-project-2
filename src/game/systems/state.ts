@@ -1,4 +1,6 @@
 import { addEffects, scaleEffects } from "../balance";
+import { collectHooks } from "../modifiers";
+import { applySoftCaps } from "./progression";
 import type {
   GameState,
   LocalizedText,
@@ -50,10 +52,23 @@ export function applyEffects(
   opts: ApplyEffectsOptions = {},
 ): GameState {
   const { scale = true, log = true, kind = "system", text } = opts;
-  const finalEffects = scale
+  const scaledEffects = scale
     ? scaleEffects(effects, state.difficulty)
     : effects;
+  const finalEffects = applySoftCaps(
+    state.stats,
+    scaledEffects,
+    collectHooks(state),
+  );
   const stats = addEffects(state.stats, finalEffects);
+  const weekGains = { ...state.weekGains };
+  for (const [rawKey, after] of Object.entries(stats)) {
+    const stat = rawKey as keyof typeof stats;
+    const actualGain = after - state.stats[stat];
+    if (actualGain > 0) {
+      weekGains[stat] = (weekGains[stat] ?? 0) + actualGain;
+    }
+  }
   const transitionCounter = state.transitionCounter + 1;
   let logEntries = state.log;
 
@@ -69,5 +84,5 @@ export function applyEffects(
     logEntries = [...state.log, entry].slice(-40);
   }
 
-  return transitionState(state, { stats, log: logEntries });
+  return transitionState(state, { stats, weekGains, log: logEntries });
 }

@@ -156,7 +156,7 @@ export type LogEntry = {
   weekInSemester: number;
   text: LocalizedText;
   effects?: StatBlock;
-  kind: "action" | "card" | "event" | "boss" | "system";
+  kind: "action" | "card" | "event" | "boss" | "system" | "drift";
 };
 
 export type Achievement = {

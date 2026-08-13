@@ -220,7 +220,7 @@ export function computeThresholds(
 
   // Mood band
   if (stats.mood >= 70) {
-    add("confidence", 1);
+    add("focus", 1);
     warnings.push("goodMood");
   } else if (stats.mood < 20) {
     warnings.push("burnout");

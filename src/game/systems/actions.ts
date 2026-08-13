@@ -10,12 +10,22 @@ export function contextualActionEffects(
   const effects: StatBlock = { ...action.effects };
 
   if (action.dynamicWeakest) {
-    const core: StatKey[] = ["knowledge", "handSkill", "clinicalSense"];
-    let weakest = core[0];
-    for (const key of core) {
-      if (stats[key] < stats[weakest]) weakest = key;
+    const core: StatKey[] = [
+      "knowledge",
+      "handSkill",
+      "clinicalSense",
+    ];
+    const untrainedCore = core.filter(
+      (key) => (state.weekGains[key] ?? 0) <= 0,
+    );
+    const weakest = untrainedCore.reduce<StatKey | undefined>(
+      (current, key) =>
+        current === undefined || stats[key] < stats[current] ? key : current,
+      undefined,
+    );
+    if (weakest) {
+      effects[weakest] = (effects[weakest] ?? 0) + 3;
     }
-    effects[weakest] = (effects[weakest] ?? 0) + 4;
   }
 
   const tags = action.tags ?? [];

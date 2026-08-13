@@ -13,6 +13,7 @@ import { EndingScreen } from "../src/components/EndingScreen";
 import { ConfirmDialog } from "../src/components/ConfirmDialog";
 import { BOSSES } from "../src/data/bosses";
 import { EVENTS } from "../src/data/events";
+import { V2_UI_TEXT } from "../src/data/uiText";
 import { newGame } from "../src/game/engine";
 import { getEnding } from "../src/game/selectors";
 import type { Lang } from "../src/game/types";
@@ -37,6 +38,24 @@ for (const lang of ["en", "zh"] as Lang[]) {
   const g = newGame("normal", "Tester");
   const ev = EVENTS[0];
   const boss = BOSSES[0];
+  const summaryState = {
+    ...g,
+    weekWarnings: ["highStress", "lowMood"],
+    log: [
+      ...g.log,
+      {
+        id: "drift_fixture",
+        semesterId: 1,
+        weekInSemester: 1,
+        text: {
+          en: "Skill drift: a core skill was not trained this week.",
+          zh: "技能回落：本周有一项核心能力没有得到练习。",
+        },
+        effects: { knowledge: -1 },
+        kind: "drift" as const,
+      },
+    ],
+  };
 
   const screens: Record<string, ReactNode> = {
     start: createElement(StartScreen, {
@@ -69,7 +88,7 @@ for (const lang of ["en", "zh"] as Lang[]) {
       onContinue: noop,
     }),
     summary: createElement(WeeklySummary, {
-      state: { ...g, weekWarnings: ["highStress", "lowMood"] },
+      state: summaryState,
       onContinue: noop,
     }),
     bossPre: createElement(BossPanel, {
@@ -105,6 +124,12 @@ for (const lang of ["en", "zh"] as Lang[]) {
   for (const [name, node] of Object.entries(screens)) {
     const html = renderToStaticMarkup(wrap(lang, node));
     assert(html && html.length > 30, `${lang}/${name} produced empty output`);
+    if (name === "summary") {
+      assert(
+        html.includes(V2_UI_TEXT.skillDriftHeading[lang]),
+        `${lang}/summary omitted the explicit skill-drift section`,
+      );
+    }
   }
   console.log(`  ${lang}: rendered ${Object.keys(screens).length} screens OK`);
 }
