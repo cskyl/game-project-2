@@ -24,7 +24,7 @@ import { getEnding, getPendingEvent } from "./game/selectors";
 import {
   clearSave,
   hasSave,
-  loadGame,
+  loadGameResult,
   loadLang,
   mergeAchievements,
   saveGame,
@@ -39,6 +39,7 @@ export default function App() {
   const [saveExists, setSaveExists] = useState<boolean>(() => hasSave());
   const [saved, setSaved] = useState(false);
   const [dialog, setDialog] = useState<null | "restart" | "clear">(null);
+  const [loadNotice, setLoadNotice] = useState<LocalizedText | null>(null);
 
   const setLang = (l: Lang) => {
     setLangState(l);
@@ -67,12 +68,17 @@ export default function App() {
   const apply = (fn: (s: GameState) => GameState) =>
     setGame((g) => (g ? fn(g) : g));
 
-  const handleStart = (difficulty: Difficulty, name: string) =>
-    setGame(newGame(difficulty, name));
+  const handleStart = (difficulty: Difficulty, name: string, seed: string) =>
+    setGame(newGame(difficulty, name, { seed }));
 
   const handleContinue = () => {
-    const loaded = loadGame();
-    if (loaded) setGame(loaded);
+    const result = loadGameResult();
+    if (result.ok) {
+      setGame(result.state);
+      setLoadNotice(result.state.migrationNotice ?? null);
+    } else {
+      setLoadNotice(result.message);
+    }
   };
 
   const handleSaveClick = () => {
@@ -178,6 +184,24 @@ export default function App() {
 
   return (
     <LangContext.Provider value={ctx}>
+      {loadNotice && (
+        <div className="migration-notice" role="status">
+          <span>{ctx.t(loadNotice)}</span>
+          <button
+            className="btn ghost"
+            onClick={() => {
+              setLoadNotice(null);
+              setGame((current) =>
+                current?.migrationNotice
+                  ? { ...current, migrationNotice: undefined }
+                  : current,
+              );
+            }}
+          >
+            {ctx.ui.close}
+          </button>
+        </div>
+      )}
       {body}
       <ConfirmDialog
         open={dialog === "restart"}

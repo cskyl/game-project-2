@@ -24,6 +24,9 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm run validate-content
+      - run: npm run test:migration
+      - run: npm run smoke
       - run: npm run build
       # Auto-enables Pages with "GitHub Actions" as the source (no manual UI step
       # needed) when the repo allows it.

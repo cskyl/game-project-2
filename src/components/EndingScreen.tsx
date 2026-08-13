@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ACHIEVEMENTS } from "../data/achievements";
+import { V2_UI_TEXT } from "../data/uiText";
 import {
   careerReadiness,
   hardestSemester,
@@ -40,6 +41,7 @@ export function EndingScreen({
       L ? "牙学院生活模拟器 · 总结" : "Dental School Life Sim — Summary",
       "",
       `${ui.endingTitle}: ${t(ending.title)} — ${t(ending.subtitle)}`,
+      `${t(V2_UI_TEXT.seedLabel)}: ${state.rngSeed}`,
       `${ui.strongestStats}: ${strong.join(", ")}`,
       hardest ? `${ui.hardestSemester}: ${hardest}` : "",
       `${t(STAT_LABELS.careerReadiness)}: ${careerReadiness(state)}  ·  ${t(
@@ -86,6 +88,7 @@ export function EndingScreen({
         <h1 className="ending-title">{t(ending.title)}</h1>
         <p className="ending-subtitle">{t(ending.subtitle)}</p>
         <p className="ending-text">{t(ending.text)}</p>
+        <p className="ending-seed">{t(V2_UI_TEXT.seedLabel)}: <code>{state.rngSeed}</code></p>
 
         <div className="ending-highlights">
           <div className="hl">

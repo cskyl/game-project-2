@@ -7,6 +7,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.json && vite build",
+    "smoke": "mkdir -p /scratch/$USER/dsls-v2 && esbuild scripts/smoke.mts --bundle --platform=node --format=esm --outfile=/scratch/$USER/dsls-v2/smoke.bundle.mjs && node /scratch/$USER/dsls-v2/smoke.bundle.mjs --quick",
+    "balance": "mkdir -p /scratch/$USER/dsls-v2 && esbuild scripts/smoke.mts --bundle --platform=node --format=esm --outfile=/scratch/$USER/dsls-v2/balance.bundle.mjs && node /scratch/$USER/dsls-v2/balance.bundle.mjs",
+    "validate-content": "mkdir -p /scratch/$USER/dsls-v2 && esbuild content-gen/validate.mts --bundle --platform=node --format=esm --outfile=/scratch/$USER/dsls-v2/validate.bundle.mjs && node /scratch/$USER/dsls-v2/validate.bundle.mjs",
+    "test:migration": "mkdir -p /scratch/$USER/dsls-v2 && esbuild scripts/migration-test.mts --bundle --platform=node --format=esm --outfile=/scratch/$USER/dsls-v2/migration-test.bundle.mjs && node /scratch/$USER/dsls-v2/migration-test.bundle.mjs",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"

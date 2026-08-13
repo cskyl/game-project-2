@@ -1,0 +1,615 @@
+import { ACTIONS } from "../src/data/actions";
+import { BOSSES } from "../src/data/bosses";
+import { CARDS } from "../src/data/cards";
+import { ENDINGS } from "../src/data/endings";
+import { EVENTS } from "../src/data/events";
+import { SEMESTERS } from "../src/data/semesters";
+import { careerReadiness, evaluateCondition } from "../src/game/balance";
+import { MONEY_MAX, MONEY_MIN } from "../src/game/constants";
+import {
+  actionStatus,
+  advanceAfterBoss,
+  chooseAction,
+  continueAfterEvent,
+  continueAfterWeeklySummary,
+  finishWeek,
+  newGame,
+  playCard,
+  resolveBoss,
+  resolveEventChoice,
+} from "../src/game/engine";
+import { getEnding, getPendingEvent } from "../src/game/selectors";
+import { migrateSave } from "../src/game/migration";
+import {
+  applyActionHooks,
+  applyAffinityGainHooks,
+  applyExpenseHooks,
+  applyIncomeHooks,
+  applyWeeklyThresholdHooks,
+  collectHooks,
+  getSoftCapBandShift,
+  registerModifier,
+  resetModifierRegistryForTests,
+} from "../src/game/modifiers";
+import { nextRandom } from "../src/game/rng";
+import type {
+  Action,
+  Difficulty,
+  GameState,
+  StatBlock,
+  StatKey,
+} from "../src/game/types";
+
+declare const process: { argv: string[] };
+
+const GUARD_LIMIT = 20_000;
+const DIFFICULTIES: Difficulty[] = ["easy", "normal", "hard"];
+
+type BotMode = "ordered" | "chaos" | "minmax";
+type Bot = {
+  id: string;
+  actions: string[];
+  choiceOffset: number;
+  mode?: BotMode;
+};
+
+const BOTS: Bot[] = [
+  {
+    id: "balanced",
+    actions: [
+      "ask_help",
+      "sleep",
+      "review_lecture",
+      "quick_drill",
+      "patient_comm",
+      "clinic_prep",
+      "relationship_time",
+      "community",
+      "research",
+      "work",
+    ],
+    choiceOffset: 0,
+  },
+  {
+    id: "study-max",
+    actions: [
+      "deep_study",
+      "review_lecture",
+      "research",
+      "ask_help",
+      "sleep",
+      "small_break",
+    ],
+    choiceOffset: 1,
+  },
+  {
+    id: "hands-max",
+    actions: [
+      "sim_lab",
+      "quick_drill",
+      "clinic_prep",
+      "ask_help",
+      "sleep",
+      "patient_comm",
+    ],
+    choiceOffset: 2,
+  },
+  {
+    id: "research-max",
+    actions: [
+      "research",
+      "deep_study",
+      "review_lecture",
+      "work",
+      "sleep",
+      "ask_help",
+    ],
+    choiceOffset: 0,
+  },
+  {
+    id: "clinic-max",
+    actions: [
+      "clinic_prep",
+      "patient_comm",
+      "sim_lab",
+      "quick_drill",
+      "community",
+      "sleep",
+    ],
+    choiceOffset: 1,
+  },
+  {
+    id: "social",
+    actions: [
+      "relationship_time",
+      "patient_comm",
+      "community",
+      "ask_help",
+      "small_break",
+      "review_lecture",
+    ],
+    choiceOffset: 2,
+  },
+  {
+    id: "wellness",
+    actions: [
+      "sleep",
+      "small_break",
+      "relationship_time",
+      "eat_good",
+      "ask_help",
+      "review_lecture",
+    ],
+    choiceOffset: 0,
+  },
+  {
+    id: "money",
+    actions: [
+      "work",
+      "small_break",
+      "sleep",
+      "review_lecture",
+      "quick_drill",
+      "ask_help",
+    ],
+    choiceOffset: 1,
+  },
+  {
+    id: "chaos",
+    actions: ACTIONS.map((action) => action.id),
+    choiceOffset: 2,
+    mode: "chaos",
+  },
+  {
+    id: "min-max-exploiter",
+    actions: ACTIONS.map((action) => action.id),
+    choiceOffset: 0,
+    mode: "minmax",
+  },
+];
+
+type PlayerInput =
+  | { type: "action"; id: string }
+  | { type: "card"; id: string }
+  | { type: "finishWeek" }
+  | { type: "eventChoice"; id: string }
+  | { type: "continueEvent" }
+  | { type: "continueSummary" }
+  | { type: "resolveBoss" }
+  | { type: "advanceBoss" };
+
+type RunResult = {
+  finalState: GameState;
+  trace: PlayerInput[];
+  eventsSeen: string[];
+  actionCounts: Record<string, number>;
+};
+
+function assert(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new Error(`ASSERT FAILED: ${message}`);
+}
+
+const ACTIONS_BY_ID = new Map(ACTIONS.map((action) => [action.id, action]));
+
+function usableActions(state: GameState): Action[] {
+  return ACTIONS.filter((action) => actionStatus(action, state).usable);
+}
+
+function mix32(value: number): number {
+  let mixed = value >>> 0;
+  mixed ^= mixed >>> 16;
+  mixed = Math.imul(mixed, 0x7feb352d);
+  mixed ^= mixed >>> 15;
+  mixed = Math.imul(mixed, 0x846ca68b);
+  return (mixed ^ (mixed >>> 16)) >>> 0;
+}
+
+function effectUtility(effects: StatBlock): number {
+  let utility = 0;
+  for (const [key, delta] of Object.entries(effects)) {
+    const value = delta ?? 0;
+    utility += key === "stress" ? -value : value;
+  }
+  return utility;
+}
+
+function pickAction(state: GameState, bot: Bot, turn: number): string | undefined {
+  const usable = usableActions(state);
+  if (usable.length === 0) return undefined;
+
+  if (bot.mode === "chaos") {
+    const index =
+      mix32(state.rngSeed ^ state.globalWeek ^ Math.imul(turn + 1, 0x9e3779b9)) %
+      usable.length;
+    return usable[index].id;
+  }
+
+  if (bot.mode === "minmax") {
+    return [...usable]
+      .sort((left, right) => {
+        const leftScore =
+          (effectUtility(left.effects) - (left.moneyCost ?? 0) * 0.15) /
+          Math.max(1, left.cost);
+        const rightScore =
+          (effectUtility(right.effects) - (right.moneyCost ?? 0) * 0.15) /
+          Math.max(1, right.cost);
+        return rightScore - leftScore || left.id.localeCompare(right.id);
+      })[0]
+      ?.id;
+  }
+
+  const preferred = bot.actions
+    .map((id) => ACTIONS_BY_ID.get(id))
+    .filter((action): action is Action => Boolean(action))
+    .filter((action) => actionStatus(action, state).usable);
+  if (preferred.length === 0) return usable[0].id;
+  const strategyWidth = Math.min(3, preferred.length);
+  const index =
+    (state.globalWeek + turn + bot.choiceOffset) % strategyWidth;
+  return preferred[index].id;
+}
+
+function pickCard(state: GameState, bot: Bot): string | undefined {
+  if (state.weeklyCards.length === 0) return undefined;
+  const index = bot.choiceOffset % state.weeklyCards.length;
+  return state.weeklyCards[index];
+}
+
+function pickEventChoice(state: GameState, bot: Bot): string {
+  const event = getPendingEvent(state);
+  assert(event, `${bot.id}: event screen has no pending event`);
+  const eligible = event.choices.filter((choice) =>
+    evaluateCondition(
+      state.stats,
+      state.flags,
+      state.semesterIndex + 1,
+      choice.requirements,
+    ),
+  );
+  assert(eligible.length > 0, `${bot.id}: event ${event.id} has no eligible choice`);
+  const index =
+    bot.mode === "chaos"
+      ? mix32(state.rngSeed ^ state.globalWeek ^ event.id.length) % eligible.length
+      : bot.choiceOffset % eligible.length;
+  return eligible[index].id;
+}
+
+function applyInput(state: GameState, input: PlayerInput): GameState {
+  switch (input.type) {
+    case "action":
+      return chooseAction(state, input.id);
+    case "card":
+      return playCard(state, input.id);
+    case "finishWeek":
+      return finishWeek(state);
+    case "eventChoice":
+      return resolveEventChoice(state, input.id);
+    case "continueEvent":
+      return continueAfterEvent(state);
+    case "continueSummary":
+      return continueAfterWeeklySummary(state);
+    case "resolveBoss":
+      return resolveBoss(state);
+    case "advanceBoss":
+      return advanceAfterBoss(state);
+  }
+}
+
+function checkState(state: GameState, label: string): void {
+  for (const [key, value] of Object.entries(state.stats)) {
+    assert(Number.isFinite(value), `${label}: ${key} is not finite (${value})`);
+    if (key === "money") {
+      assert(
+        value >= MONEY_MIN && value <= MONEY_MAX,
+        `${label}: money out of range (${value})`,
+      );
+    } else {
+      assert(value >= 0 && value <= 100, `${label}: ${key} out of range (${value})`);
+    }
+  }
+  assert(Number.isInteger(state.rngCursor), `${label}: invalid RNG cursor`);
+  assert(state.rngCursor >= 0, `${label}: negative RNG cursor`);
+}
+
+function playPrimary(bot: Bot, difficulty: Difficulty, seed: number): RunResult {
+  let state = newGame(difficulty, "Harness", { seed });
+  const trace: PlayerInput[] = [];
+  const eventsSeen = new Set<string>();
+  const actionCounts: Record<string, number> = {};
+
+  const apply = (input: PlayerInput) => {
+    assert(trace.length < GUARD_LIMIT, `${bot.id}/${difficulty}/${seed}: guard hit`);
+    trace.push(input);
+    state = applyInput(state, input);
+  };
+
+  while (state.screen !== "ending") {
+    checkState(state, `${bot.id}/${difficulty}/${seed}`);
+    switch (state.screen) {
+      case "planning": {
+        let actionTurn = 0;
+        while (state.actionPointsRemaining > 0) {
+          const actionId = pickAction(state, bot, actionTurn);
+          if (!actionId) break;
+          const before = state.actionPointsRemaining;
+          apply({ type: "action", id: actionId });
+          if (state.actionPointsRemaining >= before) break;
+          actionCounts[actionId] = (actionCounts[actionId] ?? 0) + 1;
+          actionTurn += 1;
+        }
+        while (state.weeklyCards.length > 0 && state.cardsPlayedThisWeek < 2) {
+          const cardId = pickCard(state, bot);
+          if (!cardId) break;
+          const before = state.cardsPlayedThisWeek;
+          apply({ type: "card", id: cardId });
+          if (state.cardsPlayedThisWeek <= before) break;
+        }
+        apply({ type: "finishWeek" });
+        break;
+      }
+      case "event": {
+        if (state.pendingChoiceId) {
+          apply({ type: "continueEvent" });
+        } else {
+          const event = getPendingEvent(state);
+          assert(event, `${bot.id}/${difficulty}/${seed}: missing pending event`);
+          eventsSeen.add(event.id);
+          apply({ type: "eventChoice", id: pickEventChoice(state, bot) });
+        }
+        break;
+      }
+      case "weeklySummary":
+        apply({ type: "continueSummary" });
+        break;
+      case "boss":
+        apply(state.lastBossResult ? { type: "advanceBoss" } : { type: "resolveBoss" });
+        break;
+      default:
+        throw new Error(
+          `${bot.id}/${difficulty}/${seed}: unsupported screen ${state.screen}`,
+        );
+    }
+  }
+
+  checkState(state, `${bot.id}/${difficulty}/${seed}:final`);
+  assert(
+    state.semesterIndex === SEMESTERS.length - 1,
+    `${bot.id}/${difficulty}/${seed}: ended in semester index ${state.semesterIndex}`,
+  );
+  assert(
+    state.bossHistory.length === BOSSES.length,
+    `${bot.id}/${difficulty}/${seed}: expected ${BOSSES.length} bosses, got ${state.bossHistory.length}`,
+  );
+  assert(getEnding(state)?.id, `${bot.id}/${difficulty}/${seed}: missing ending`);
+  return { finalState: state, trace, eventsSeen: [...eventsSeen], actionCounts };
+}
+
+function replay(
+  difficulty: Difficulty,
+  seed: number,
+  trace: readonly PlayerInput[],
+): GameState {
+  let state = newGame(difficulty, "Harness", { seed });
+  assert(trace.length < GUARD_LIMIT, `replay/${difficulty}/${seed}: oversized trace`);
+  for (const input of trace) state = applyInput(state, input);
+  assert(state.screen === "ending", `replay/${difficulty}/${seed}: did not terminate`);
+  return state;
+}
+
+function mean(values: readonly number[]): number {
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function standardDeviation(values: readonly number[]): number {
+  const average = mean(values);
+  return Math.sqrt(mean(values.map((value) => (value - average) ** 2)));
+}
+
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((left, right) => left - right);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function seedFor(botIndex: number, difficultyIndex: number, runIndex: number): number {
+  return mix32(
+    0xd35a_2000 ^
+      Math.imul(botIndex + 1, 0x9e37_79b9) ^
+      Math.imul(difficultyIndex + 1, 0x85eb_ca6b) ^
+      Math.imul(runIndex + 1, 0xc2b2_ae35),
+  );
+}
+
+function contentChecks(): void {
+  assert(EVENTS.length >= 90, "expected at least 90 events");
+  for (const [label, ids] of [
+    ["event", EVENTS.map((item) => item.id)],
+    ["card", CARDS.map((item) => item.id)],
+    ["ending", ENDINGS.map((item) => item.id)],
+    ["action", ACTIONS.map((item) => item.id)],
+  ] as const) {
+    assert(new Set(ids).size === ids.length, `duplicate ${label} id`);
+  }
+}
+
+function foundationChecks(): void {
+  const hooks = [
+    { on: "actionEffects", mult: 1.5 },
+    { on: "actionEffects", add: 2 },
+    { on: "actionEffects", stat: "knowledge", mult: 2, add: 3 },
+    { on: "actionEffects", stat: "stress", mult: 0.5, add: 1 },
+  ] as const;
+  const forward = applyActionHooks(
+    { knowledge: 10, stress: -10 },
+    ["study"],
+    hooks,
+  );
+  const reverse = applyActionHooks(
+    { knowledge: 10, stress: -10 },
+    ["study"],
+    [...hooks].reverse(),
+  );
+  assert(JSON.stringify(forward) === JSON.stringify(reverse), "modifier order changed result");
+  assert(forward.knowledge === 35, "action modifier product/sum formula changed");
+  assert(forward.stress === -4, "broad hooks affected a signed penalty");
+  assert(
+    applyWeeklyThresholdHooks({}, [{ on: "weeklyThreshold", stat: "stress", add: -2 }]).stress === -2,
+    "weeklyThreshold hook funnel failed",
+  );
+  assert(
+    getSoftCapBandShift([{ on: "softCapBand", stat: "knowledge", shift: 5 }], "knowledge") === 5,
+    "softCapBand hook funnel failed",
+  );
+  assert(applyAffinityGainHooks(10, [{ on: "affinityGain", mult: 1.3 }]) === 13, "affinity hook funnel failed");
+  assert(applyIncomeHooks(10, [{ on: "income", mult: 1.4 }]) === 14, "income hook funnel failed");
+  assert(applyExpenseHooks(10, [{ on: "expense", mult: 0.8 }]) === 8, "expense hook funnel failed");
+
+  resetModifierRegistryForTests();
+  const source = { kind: "npc", id: "jordan_ally" } as const;
+  const definition = [{ on: "apPerWeek", add: 1 }] as const;
+  registerModifier(source, definition);
+  registerModifier(source, definition);
+  const npcState = newGame("normal", "Registry Probe", { seed: 41 });
+  const activeNpcState: GameState = {
+    ...npcState,
+    npcs: { jordan: { affinity: 80, arcStage: 3, flags: ["jordan_ally"] } },
+  };
+  assert(
+    collectHooks(activeNpcState).some((hook) => hook.on === "apPerWeek"),
+    "NPC flag did not activate its registry source",
+  );
+  let conflictCaught = false;
+  try {
+    registerModifier(source, [{ on: "apPerWeek", add: 2 }]);
+  } catch {
+    conflictCaught = true;
+  }
+  assert(conflictCaught, "conflicting modifier redefinition was accepted");
+  resetModifierRegistryForTests();
+
+  const randomSequence = (seed: number): number[] => {
+    let state = newGame("normal", "RNG Probe", { seed });
+    const values: number[] = [];
+    for (let index = 0; index < 8; index += 1) {
+      const [value, next] = nextRandom(state);
+      values.push(value);
+      state = next;
+    }
+    return values;
+  };
+  const sequenceA = randomSequence(0x1234_5678);
+  const sequenceAReplay = randomSequence(0x1234_5678);
+  const sequenceB = randomSequence(0x1234_5679);
+  assert(JSON.stringify(sequenceA) === JSON.stringify(sequenceAReplay), "direct RNG replay diverged");
+  assert(JSON.stringify(sequenceA) !== JSON.stringify(sequenceB), "distinct RNG seeds produced the same sequence");
+}
+
+const quick = process.argv.includes("--quick");
+const seedsPerBotDifficulty = quick ? 1 : 40;
+const expectedPrimaryRuns = BOTS.length * DIFFICULTIES.length * seedsPerBotDifficulty;
+const endings = new Map<string, number>();
+const eventsSeen = new Set<string>();
+const readiness: number[] = [];
+const decisions: number[] = [];
+const botActionCounts = new Map<string, Record<string, number>>();
+let completed = 0;
+let deterministicReplays = 0;
+let maxDecisions = 0;
+
+contentChecks();
+foundationChecks();
+const migrationProbe = migrateSave({
+  version: "1.0.0",
+  stats: { knowledge: 73 },
+  playerName: "Harness Migration",
+  flags: ["preserve_me"],
+  eventHistory: ["preserve_event"],
+  bossHistory: [],
+  log: [],
+});
+assert(migrationProbe.ok && migrationProbe.migrated, "G12 V1 migration failed");
+assert(migrationProbe.state.stats.knowledge === 73, "G12 legacy stat lost");
+assert(migrationProbe.state.flags.includes("preserve_me"), "G12 legacy flag lost");
+const futureProbe = migrateSave({ version: "99.0.0", stats: {} });
+assert(!futureProbe.ok && futureProbe.reason === "future", "G12 future save accepted");
+const startedAt = performance.now();
+for (let botIndex = 0; botIndex < BOTS.length; botIndex += 1) {
+  const bot = BOTS[botIndex];
+  const aggregateActions: Record<string, number> = {};
+  for (
+    let difficultyIndex = 0;
+    difficultyIndex < DIFFICULTIES.length;
+    difficultyIndex += 1
+  ) {
+    const difficulty = DIFFICULTIES[difficultyIndex];
+    for (let runIndex = 0; runIndex < seedsPerBotDifficulty; runIndex += 1) {
+      const seed = seedFor(botIndex, difficultyIndex, runIndex);
+      const primary = playPrimary(bot, difficulty, seed);
+      const replayed = replay(difficulty, seed, primary.trace);
+      assert(
+        JSON.stringify(primary.finalState) === JSON.stringify(replayed),
+        `G10 mismatch: ${bot.id}/${difficulty}/${seed}`,
+      );
+
+      completed += 1;
+      deterministicReplays += 1;
+      maxDecisions = Math.max(maxDecisions, primary.trace.length);
+      decisions.push(primary.trace.length);
+      readiness.push(careerReadiness(primary.finalState.stats));
+      const endingId = primary.finalState.endingId ?? "missing";
+      endings.set(endingId, (endings.get(endingId) ?? 0) + 1);
+      for (const eventId of primary.eventsSeen) eventsSeen.add(eventId);
+      for (const [actionId, count] of Object.entries(primary.actionCounts)) {
+        aggregateActions[actionId] = (aggregateActions[actionId] ?? 0) + count;
+      }
+    }
+  }
+  botActionCounts.set(bot.id, aggregateActions);
+}
+
+assert(completed === expectedPrimaryRuns, `G3 expected ${expectedPrimaryRuns} runs`);
+assert(deterministicReplays === expectedPrimaryRuns, "G10 replay count mismatch");
+
+let highestActionShare = 0;
+let highestActionLabel = "none";
+for (const [botId, counts] of botActionCounts) {
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  for (const [actionId, count] of Object.entries(counts)) {
+    const share = total > 0 ? count / total : 0;
+    if (share > highestActionShare) {
+      highestActionShare = share;
+      highestActionLabel = `${botId}:${actionId}`;
+    }
+  }
+}
+
+const endingReport = [...endings]
+  .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+  .map(([id, count]) => `${id}=${count}`)
+  .join(", ");
+const maxEndingShare = Math.max(...endings.values()) / completed;
+const deadEvents = EVENTS.filter((event) => !eventsSeen.has(event.id)).map(
+  (event) => event.id,
+);
+const elapsedSeconds = (performance.now() - startedAt) / 1_000;
+
+console.log(
+  `P0 ${quick ? "SMOKE" : "BALANCE"}: ${completed} primary + ${deterministicReplays} exact replays in ${elapsedSeconds.toFixed(2)}s`,
+);
+console.log(
+  `Content: events=${EVENTS.length}, cards=${CARDS.length}, endings=${ENDINGS.length}, actions=${ACTIONS.length}, bots=${BOTS.length}`,
+);
+console.log(`Endings (${endings.size}): ${endingReport}`);
+console.log(
+  `Observed: CR mean=${mean(readiness).toFixed(1)} sd=${standardDeviation(readiness).toFixed(1)} max=${Math.max(...readiness)}; decisions median=${median(decisions)} max=${maxDecisions}`,
+);
+console.log(
+  `Coverage: events=${eventsSeen.size}/${EVENTS.length} (${((eventsSeen.size / EVENTS.length) * 100).toFixed(1)}%); dead=${deadEvents.length}; max ending=${(maxEndingShare * 100).toFixed(1)}%; max action=${(highestActionShare * 100).toFixed(1)}% (${highestActionLabel})`,
+);
+console.log("G1 DEFERRED P1/P7 | G2 DEFERRED P1 | G3 PASS: all bots terminate, guard <20000");
+console.log("G4 DEFERRED P9 | G5 DEFERRED P3 | G6 DEFERRED P7 | G7 DEFERRED P6");
+console.log("G8 DEFERRED P6 | G9 DEFERRED P2 | G10 PASS: byte-identical final states");
+console.log("G11 EXTERNAL: build + validator | G12 PASS: V1 migration + future refusal");
+console.log(quick ? "SMOKE P0 OK" : "BALANCE P0 OK");

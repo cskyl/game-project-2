@@ -1,7 +1,8 @@
 import type { Difficulty, StatKey } from "./types";
 
-export const SAVE_VERSION = "1.0.0";
-export const SAVE_KEY = "dsls.save.v1";
+export const SAVE_VERSION = "2.0.0";
+export const SAVE_KEY = "dsls.save.v2";
+export const LEGACY_SAVE_KEY = "dsls.save.v1";
 export const LANG_KEY = "dsls.lang";
 export const ACHIEVEMENTS_KEY = "dsls.achievements.v1";
 
@@ -29,6 +30,8 @@ export const ALL_STATS: StatKey[] = [
   "love",
   "research",
   "publicImpact",
+  "focus",
+  "standing",
   "money",
 ];
 

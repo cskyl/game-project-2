@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { personalization } from "../data/personalization";
+import { V2_UI_TEXT } from "../data/uiText";
 import { useLang } from "../i18n";
 import type { Difficulty } from "../game/types";
 
@@ -10,13 +11,14 @@ export function StartScreen({
   onClearSave,
 }: {
   hasSave: boolean;
-  onStart: (difficulty: Difficulty, name: string) => void;
+  onStart: (difficulty: Difficulty, name: string, seed: string) => void;
   onContinue: () => void;
   onClearSave: () => void;
 }) {
-  const { ui, lang, setLang } = useLang();
+  const { ui, lang, setLang, t } = useLang();
   const [name, setName] = useState(personalization.playerDefaultName);
   const [difficulty, setDifficulty] = useState<Difficulty>("normal");
+  const [seed, setSeed] = useState(() => String(Date.now() >>> 0));
 
   const diffName = (d: Difficulty) =>
     d === "easy" ? ui.easy : d === "normal" ? ui.normal : ui.hard;
@@ -50,6 +52,19 @@ export function StartScreen({
           />
         </label>
 
+        <label className="field">
+          <span className="field-label">{t(V2_UI_TEXT.seedLabel)}</span>
+          <input
+            className="text-input"
+            value={seed}
+            onChange={(event) => setSeed(event.target.value)}
+            placeholder={t(V2_UI_TEXT.seedPlaceholder)}
+            maxLength={40}
+            inputMode="text"
+          />
+          <span className="field-hint">{t(V2_UI_TEXT.seedHint)}</span>
+        </label>
+
         <div className="field">
           <span className="field-label">{ui.difficulty}</span>
           <div className="difficulty-row">
@@ -68,7 +83,7 @@ export function StartScreen({
         </div>
 
         <div className="start-actions">
-          <button className="btn primary big" onClick={() => onStart(difficulty, name)}>
+          <button className="btn primary big" onClick={() => onStart(difficulty, name, seed)}>
             {ui.newGame}
           </button>
           {hasSave && (

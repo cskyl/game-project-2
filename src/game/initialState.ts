@@ -15,5 +15,7 @@ export const INITIAL_STATS: Record<StatKey, number> = {
   love: 45,
   research: 10,
   publicImpact: 10,
+  focus: 65,
+  standing: 30,
   money: 50,
 };

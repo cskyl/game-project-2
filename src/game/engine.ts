@@ -2,13 +2,11 @@ import { ACTIONS } from "../data/actions";
 import { BOSSES } from "../data/bosses";
 import { CARDS, CARDS_BY_ID } from "../data/cards";
 import { ENDINGS } from "../data/endings";
-import { EVENTS, EVENTS_BY_ID } from "../data/events";
+import { EVENTS_BY_ID } from "../data/events";
 import { personalization } from "../data/personalization";
 import { SEMESTERS } from "../data/semesters";
 import {
-  CARDS_DRAWN_PER_WEEK,
   DIFFICULTY,
-  EVENT_RECENCY_WINDOW,
   MAX_CARDS_PLAYED_PER_WEEK,
   MONEY_MIN,
   SAVE_VERSION,
@@ -16,30 +14,38 @@ import {
 } from "./constants";
 import { INITIAL_STATS } from "./initialState";
 import {
-  addEffects,
   careerReadiness,
   computeThresholds,
   evaluateCondition,
   getStat,
-  randInt,
-  scaleEffects,
-  weightedPick,
   wellness,
 } from "./balance";
+import { chance, normalizeSeed, randomInt } from "./rng";
+import {
+  applyWeeklyThresholdHooks,
+  collectHooks,
+  sumHookAdds,
+} from "./modifiers";
+import { contextualActionEffects } from "./systems/actions";
+import { drawWeeklyCards } from "./systems/deck";
+import {
+  selectCrisisEvent,
+  selectWeeklyEvent,
+} from "./systems/events";
+import {
+  applyEffects,
+  initialRunTimestamp,
+  transitionState,
+} from "./systems/state";
 import type {
   Action,
   Boss,
   BossOutcomeKey,
   Difficulty,
   Ending,
-  GameEvent,
   GameState,
-  LifeCard,
   LocalizedText,
-  LogEntry,
   Semester,
-  StatBlock,
-  StatKey,
 } from "./types";
 
 const RECOVERY_EVENT_ID = "well_recovery_week";
@@ -48,9 +54,6 @@ const WEEKLY_LABEL: LocalizedText = {
   en: "Weekly adjustments",
   zh: "每周自动调整",
 };
-
-const uid = () => Math.random().toString(36).slice(2, 10);
-const now = () => new Date().toISOString();
 
 const ACTIONS_BY_ID: Record<string, Action> = Object.fromEntries(
   ACTIONS.map((a) => [a.id, a]),
@@ -66,92 +69,6 @@ export const currentSemester = (s: GameState): Semester => SEMESTERS[s.semesterI
 export const currentSemesterId = (s: GameState): number => s.semesterIndex + 1;
 export const isFinalSemester = (s: GameState): boolean =>
   s.semesterIndex >= SEMESTERS.length - 1;
-
-// ---------------------------------------------------------------------------
-// Effects + logging
-// ---------------------------------------------------------------------------
-
-type ApplyOpts = {
-  scale?: boolean;
-  log?: boolean;
-  kind?: LogEntry["kind"];
-  text?: LocalizedText;
-};
-
-function applyEffects(state: GameState, effects: StatBlock, opts: ApplyOpts = {}): GameState {
-  const { scale = true, log = true, kind = "system", text } = opts;
-  const finalEffects = scale ? scaleEffects(effects, state.difficulty) : effects;
-  const stats = addEffects(state.stats, finalEffects);
-  let logEntries = state.log;
-  if (log && text && Object.keys(finalEffects).length > 0) {
-    const entry: LogEntry = {
-      id: uid(),
-      semesterId: currentSemesterId(state),
-      weekInSemester: state.weekInSemester,
-      text,
-      effects: finalEffects,
-      kind,
-    };
-    logEntries = [...state.log, entry].slice(-40);
-  }
-  return { ...state, stats, log: logEntries };
-}
-
-/** Apply contextual (stamina/mood/stress) modifiers to an action's effects. */
-function actionEffects(action: Action, stats: Record<StatKey, number>): StatBlock {
-  const eff: StatBlock = { ...action.effects };
-
-  if (action.dynamicWeakest) {
-    const core: StatKey[] = ["knowledge", "handSkill", "clinicalSense"];
-    let weakest = core[0];
-    for (const k of core) if (stats[k] < stats[weakest]) weakest = k;
-    eff[weakest] = (eff[weakest] ?? 0) + 4;
-  }
-
-  const tags = action.tags ?? [];
-  const scaleKey = (k: StatKey, f: number) => {
-    if (eff[k] !== undefined) eff[k] = Math.round((eff[k] as number) * f);
-  };
-
-  if (tags.includes("study")) {
-    // Too relaxed: urgency is low, studying is slightly less sharp.
-    if (stats.stress < 30 && eff.knowledge !== undefined) {
-      eff.knowledge = (eff.knowledge as number) - 1;
-    }
-    // Low mood: study effectiveness -10%.
-    if (stats.mood >= 20 && stats.mood < 40) scaleKey("knowledge", 0.9);
-  }
-
-  if (tags.includes("lab") || tags.includes("clinic")) {
-    // Very low stamina: hands/clinic effects -20%.
-    if (stats.stamina < 25) {
-      scaleKey("handSkill", 0.8);
-      scaleKey("clinicalSense", 0.8);
-      scaleKey("empathy", 0.8);
-      scaleKey("publicImpact", 0.8);
-    }
-  }
-
-  if (tags.includes("support") || tags.includes("relationship")) {
-    // Low mood: support/relationship effectiveness +20%.
-    if (stats.mood >= 20 && stats.mood < 40) {
-      scaleKey("love", 1.2);
-      scaleKey("mood", 1.2);
-    }
-  }
-
-  if (tags.includes("heavy") && stats.stamina > 75) {
-    // High stamina: heavy actions cost less mood/stress.
-    if (eff.mood !== undefined && (eff.mood as number) < 0) {
-      eff.mood = Math.round((eff.mood as number) * 0.7);
-    }
-    if (eff.stress !== undefined && (eff.stress as number) > 0) {
-      eff.stress = Math.round((eff.stress as number) * 0.7);
-    }
-  }
-
-  return eff;
-}
 
 // ---------------------------------------------------------------------------
 // Action availability
@@ -184,34 +101,6 @@ export function actionStatus(action: Action, state: GameState): ActionStatus {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Cards
-// ---------------------------------------------------------------------------
-
-function drawCards(
-  stats: Record<StatKey, number>,
-  flags: string[],
-  semesterId: number,
-  stage: Semester["stage"],
-): string[] {
-  const eligible = CARDS.filter(
-    (c) =>
-      (c.stage.includes("any") || c.stage.includes(stage)) &&
-      evaluateCondition(stats, flags, semesterId, c.requirements),
-  );
-  const rarityWeight = (c: LifeCard) =>
-    c.rarity === "common" ? 6 : c.rarity === "rare" ? 3 : 1;
-  const pool = [...eligible];
-  const picked: string[] = [];
-  for (let i = 0; i < CARDS_DRAWN_PER_WEEK && pool.length > 0; i++) {
-    const c = weightedPick(pool, rarityWeight);
-    if (!c) break;
-    picked.push(c.id);
-    pool.splice(pool.indexOf(c), 1);
-  }
-  return picked;
-}
-
 export function playCard(state: GameState, cardId: string): GameState {
   if (state.cardsPlayedThisWeek >= MAX_CARDS_PLAYED_PER_WEEK) return state;
   if (!state.weeklyCards.includes(cardId)) return state;
@@ -223,12 +112,10 @@ export function playCard(state: GameState, cardId: string): GameState {
     kind: "card",
     text: card.title,
   });
-  next = {
-    ...next,
+  next = transitionState(next, {
     weeklyCards: next.weeklyCards.filter((id) => id !== cardId),
     cardsPlayedThisWeek: next.cardsPlayedThisWeek + 1,
-    updatedAt: now(),
-  };
+  });
   return checkAchievements(next);
 }
 
@@ -241,26 +128,38 @@ function startWeek(
   opts: { semesterIndex: number; weekInSemester: number },
 ): GameState {
   const sem = SEMESTERS[opts.semesterIndex];
-  const cards = drawCards(state.stats, state.flags, opts.semesterIndex + 1, sem.stage);
-  return {
-    ...state,
+  const [cards, randomState] = drawWeeklyCards(
+    state,
+    opts.semesterIndex + 1,
+    sem.stage,
+  );
+  return transitionState(randomState, {
     semesterIndex: opts.semesterIndex,
     weekInSemester: opts.weekInSemester,
-    globalWeek: state.globalWeek + 1,
-    actionPointsRemaining: DIFFICULTY[state.difficulty].actionPoints,
-    weekStartStats: { ...state.stats },
+    globalWeek: randomState.globalWeek + 1,
+    actionPointsRemaining:
+      DIFFICULTY[randomState.difficulty].actionPoints +
+      sumHookAdds(collectHooks(randomState), "apPerWeek"),
+    weekStartStats: { ...randomState.stats },
     weeklyCards: cards,
     cardsPlayedThisWeek: 0,
     weekWarnings: [],
     screen: "planning",
     pendingEventId: undefined,
     pendingChoiceId: undefined,
-    updatedAt: now(),
-  };
+  });
 }
 
-export function newGame(difficulty: Difficulty, playerName: string): GameState {
+export type NewGameOptions = { seed?: number | string };
+
+export function newGame(
+  difficulty: Difficulty,
+  playerName: string,
+  options: NewGameOptions = {},
+): GameState {
   const name = playerName.trim() || personalization.playerDefaultName;
+  const seed = normalizeSeed(options.seed);
+  const createdAt = initialRunTimestamp();
   const base: GameState = {
     version: SAVE_VERSION,
     playerName: name,
@@ -270,6 +169,34 @@ export function newGame(difficulty: Difficulty, playerName: string): GameState {
     globalWeek: 0,
     actionPointsRemaining: DIFFICULTY[difficulty].actionPoints,
     stats: { ...INITIAL_STATS },
+    archetypeId: undefined,
+    npcs: {},
+    research: {
+      researchPoints: 0,
+      projects: [],
+      publications: [],
+      posters: 0,
+      grantsWon: [],
+      reputationInLab: 0,
+    },
+    caseLog: [],
+    simLabLog: [],
+    perks: [],
+    perkPoints: 0,
+    equipment: [],
+    debt: 0,
+    sleepDebt: 0,
+    injuryRisk: 0,
+    activeElective: undefined,
+    semesterModifiers: [],
+    runDeck: CARDS.map((card) => card.id),
+    leadershipRole: undefined,
+    breakChoices: [],
+    matchApplications: [],
+    weekGains: {},
+    pendingCaseId: undefined,
+    pendingSimLabId: undefined,
+    pendingBreakId: undefined,
     weekStartStats: { ...INITIAL_STATS },
     flags: [],
     eventHistory: [],
@@ -281,8 +208,11 @@ export function newGame(difficulty: Difficulty, playerName: string): GameState {
     weekWarnings: [],
     unlockedAchievements: [],
     screen: "planning",
-    createdAt: now(),
-    updatedAt: now(),
+    rngSeed: seed,
+    rngCursor: 0,
+    transitionCounter: 0,
+    createdAt,
+    updatedAt: createdAt,
   };
   return startWeek(base, { semesterIndex: 0, weekInSemester: 1 });
 }
@@ -292,74 +222,31 @@ export function chooseAction(state: GameState, actionId: string): GameState {
   if (!action) return state;
   const status = actionStatus(action, state);
   if (!status.usable) return state;
-  const eff = actionEffects(action, state.stats);
+  const eff = contextualActionEffects(action, state);
   let next = applyEffects(state, eff, {
     scale: true,
     log: true,
     kind: "action",
     text: action.title,
   });
-  next = {
-    ...next,
+  next = transitionState(next, {
     actionPointsRemaining: next.actionPointsRemaining - action.cost,
-    updatedAt: now(),
-  };
+  });
   return checkAchievements(next);
-}
-
-// ---------------------------------------------------------------------------
-// Event selection + resolution
-// ---------------------------------------------------------------------------
-
-function eventEligible(e: GameEvent, state: GameState): boolean {
-  const sem = currentSemester(state);
-  const semId = currentSemesterId(state);
-  if (!(e.stage.includes("any") || e.stage.includes(sem.stage))) return false;
-  if (e.minSemester !== undefined && semId < e.minSemester) return false;
-  if (e.maxSemester !== undefined && semId > e.maxSemester) return false;
-  if (!evaluateCondition(state.stats, state.flags, semId, e.condition)) return false;
-  return true;
-}
-
-function selectEvent(state: GameState): string | undefined {
-  const eligible = EVENTS.filter((e) => eventEligible(e, state));
-  if (eligible.length === 0) return undefined;
-  const recent = state.eventHistory.slice(-EVENT_RECENCY_WINDOW);
-  const nonRecent = eligible.filter(
-    (e) => !recent.includes(e.id) || e.tags.includes("crisis"),
-  );
-  const pool = nonRecent.length > 0 ? nonRecent : eligible;
-  const weightFn = (e: GameEvent) => {
-    let w = e.weight;
-    if (
-      state.stats.mood >= 70 &&
-      (e.tags.includes("relationship") || e.tags.includes("support"))
-    ) {
-      w *= 1.5;
-    }
-    return w;
-  };
-  return weightedPick(pool, weightFn)?.id;
-}
-
-function pickCrisisEvent(state: GameState): string | undefined {
-  const pool = EVENTS.filter(
-    (e) =>
-      eventEligible(e, state) &&
-      (e.tags.includes("crisis") || e.tags.includes("wellness")),
-  );
-  if (pool.length === 0) return undefined;
-  return weightedPick(pool, (e) => e.weight)?.id;
 }
 
 export function finishWeek(state: GameState): GameState {
   const thr = computeThresholds(state.stats, state.difficulty);
+  const thresholdEffects = applyWeeklyThresholdHooks(
+    thr.effects,
+    collectHooks(state),
+  );
   const lowMood = state.stats.mood < 20;
   const lowMoodStreak = lowMood ? state.lowMoodStreak + 1 : 0;
 
   let next = state;
-  if (Object.keys(thr.effects).length > 0) {
-    next = applyEffects(next, thr.effects, {
+  if (Object.keys(thresholdEffects).length > 0) {
+    next = applyEffects(next, thresholdEffects, {
       scale: false,
       log: true,
       kind: "system",
@@ -371,7 +258,11 @@ export function finishWeek(state: GameState): GameState {
   if (thr.hitCriticalStress && !flags.includes("hit_critical_stress")) {
     flags = [...flags, "hit_critical_stress"];
   }
-  next = { ...next, flags, lowMoodStreak, weekWarnings: thr.warnings };
+  next = transitionState(next, {
+    flags,
+    lowMoodStreak,
+    weekWarnings: thr.warnings,
+  });
   next = checkAchievements(next);
 
   // Choose this week's event.
@@ -379,24 +270,36 @@ export function finishWeek(state: GameState): GameState {
   if (lowMoodStreak >= 3 && EVENTS_BY_ID[RECOVERY_EVENT_ID]) {
     eventId = RECOVERY_EVENT_ID;
   }
-  if (!eventId && thr.triggerCrisis) {
-    eventId = pickCrisisEvent(next);
+  if (!eventId && thr.crisisChance > 0) {
+    const [triggerCrisis, randomState] = chance(next, thr.crisisChance);
+    next = randomState;
+    if (triggerCrisis) {
+      [eventId, next] = selectCrisisEvent(next);
+    }
   }
   if (!eventId) {
-    eventId = selectEvent(next);
+    [eventId, next] = selectWeeklyEvent(next);
   }
 
   if (eventId) {
-    next = { ...next, pendingEventId: eventId, pendingChoiceId: undefined, screen: "event", updatedAt: now() };
+    next = transitionState(next, {
+      pendingEventId: eventId,
+      pendingChoiceId: undefined,
+      screen: "event",
+    });
   } else {
-    next = { ...next, pendingEventId: undefined, pendingChoiceId: undefined, screen: "weeklySummary", updatedAt: now() };
+    next = transitionState(next, {
+      pendingEventId: undefined,
+      pendingChoiceId: undefined,
+      screen: "weeklySummary",
+    });
   }
   return next;
 }
 
 export function resolveEventChoice(state: GameState, choiceId: string): GameState {
   const event = state.pendingEventId ? EVENTS_BY_ID[state.pendingEventId] : undefined;
-  if (!event) return { ...state, screen: "weeklySummary" };
+  if (!event) return transitionState(state, { screen: "weeklySummary" });
   const choice = event.choices.find((c) => c.id === choiceId);
   if (!choice) return state;
   // Requirement gate (if any) — ignore unmet choices.
@@ -416,18 +319,16 @@ export function resolveEventChoice(state: GameState, choiceId: string): GameStat
   if (choice.addFlags) flags = Array.from(new Set([...flags, ...choice.addFlags]));
   if (choice.removeFlags) flags = flags.filter((f) => !choice.removeFlags!.includes(f));
   const eventHistory = [...next.eventHistory, event.id].slice(-50);
-  next = {
-    ...next,
+  next = transitionState(next, {
     flags,
     eventHistory,
     pendingChoiceId: choiceId,
-    updatedAt: now(),
-  };
+  });
   return checkAchievements(next);
 }
 
 export function continueAfterEvent(state: GameState): GameState {
-  return { ...state, screen: "weeklySummary", updatedAt: now() };
+  return transitionState(state, { screen: "weeklySummary" });
 }
 
 export function continueAfterWeeklySummary(state: GameState): GameState {
@@ -436,16 +337,14 @@ export function continueAfterWeeklySummary(state: GameState): GameState {
     // Defensive: if a semester has no configured boss, skip the check entirely
     // (advance to next semester or the ending) rather than entering a dead screen.
     if (!boss) return advanceAfterBoss(state);
-    return {
-      ...state,
+    return transitionState(state, {
       screen: "boss",
       pendingBossId: boss.id,
       lastBossResult: undefined,
       pendingEventId: undefined,
       pendingChoiceId: undefined,
       weekWarnings: [],
-      updatedAt: now(),
-    };
+    });
   }
   return startWeek(state, {
     semesterIndex: state.semesterIndex,
@@ -495,25 +394,28 @@ export function resolveBoss(state: GameState): GameState {
   if (!boss) return state;
   const cfg = DIFFICULTY[state.difficulty];
   const base = bossBreakdown(boss, state).base;
-  const roll = randInt(cfg.bossRoll[0], cfg.bossRoll[1]);
-  const score = Math.max(0, Math.min(100, Math.round(base + roll)));
+  const [roll, randomState] = randomInt(
+    state,
+    cfg.bossRoll[0],
+    cfg.bossRoll[1],
+  );
+  const modifier = sumHookAdds(collectHooks(state), "bossRoll");
+  const score = Math.max(0, Math.min(100, Math.round(base + roll + modifier)));
   const outcome = scoreToOutcome(score);
   const out = boss.outcomes[outcome];
 
-  let next = applyEffects(state, out.effects, {
+  let next = applyEffects(randomState, out.effects, {
     scale: true,
     log: true,
     kind: "boss",
     text: boss.title,
   });
   const result = { bossId: boss.id, semesterId: boss.semesterId, score, outcome };
-  next = {
-    ...next,
+  next = transitionState(next, {
     bossHistory: [...next.bossHistory, result],
     lastBossResult: result,
     pendingBossId: boss.id,
-    updatedAt: now(),
-  };
+  });
   if (outcome === "great") next = unlockAchievement(next, "first_boss_great");
   return checkAchievements(next);
 }
@@ -521,14 +423,12 @@ export function resolveBoss(state: GameState): GameState {
 export function advanceAfterBoss(state: GameState): GameState {
   if (isFinalSemester(state)) {
     const ending = determineEnding(state);
-    let next: GameState = {
-      ...state,
+    let next: GameState = transitionState(state, {
       endingId: ending.id,
       screen: "ending",
       pendingBossId: undefined,
       lastBossResult: undefined,
-      updatedAt: now(),
-    };
+    });
     return checkEndingAchievements(next);
   }
   return startWeek(

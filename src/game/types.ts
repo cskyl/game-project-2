@@ -30,10 +30,17 @@ export type StatKey =
   | "love"
   | "research"
   | "publicImpact"
+  | "focus"
+  | "standing"
   | "money";
 
 /** Derived (read-only) stats usable in conditions and boss checks. */
-export type DerivedKey = "wellness" | "careerReadiness" | "lifeBalance";
+export type DerivedKey =
+  | "wellness"
+  | "careerReadiness"
+  | "lifeBalance"
+  | "researchOutput"
+  | "clinicalRecord";
 
 export type ConditionStatKey = StatKey | DerivedKey;
 
@@ -158,8 +165,99 @@ export type Achievement = {
   description: LocalizedText;
 };
 
+export type ProjectPhase =
+  | "idea"
+  | "pilot"
+  | "irb"
+  | "collection"
+  | "analysis"
+  | "writing"
+  | "submitted"
+  | "revision"
+  | "accepted"
+  | "rejected"
+  | "abandoned";
+
+export type ResearchVenue = "poster" | "regional" | "specialty" | "top";
+
+export type ResearchProject = {
+  id: string;
+  templateId: string;
+  title: LocalizedText;
+  phase: ProjectPhase;
+  progress: number;
+  quality: number;
+  weeksInPhase: number;
+  risk: number;
+  venue?: ResearchVenue;
+  reviewRoundsLeft?: number;
+};
+
+export type Publication = {
+  id: string;
+  projectId: string;
+  title: LocalizedText;
+  venue: ResearchVenue;
+  firstAuthor: boolean;
+  quality: number;
+};
+
+export type ResearchState = {
+  labId?: string;
+  researchPoints: number;
+  projects: ResearchProject[];
+  publications: Publication[];
+  posters: number;
+  grantsWon: string[];
+  reputationInLab: number;
+};
+
+export type NpcState = {
+  affinity: number;
+  arcStage: number;
+  flags: string[];
+};
+
+export type CaseOutcome = "excellent" | "good" | "rough" | "bad";
+
+export type CaseLogEntry = {
+  caseId: string;
+  outcome: CaseOutcome;
+  tags: string[];
+};
+
+export type SimLabResult = "commendation" | "pass" | "rough";
+
+export type SimLabLogEntry = {
+  exerciseId: string;
+  result: SimLabResult;
+  idealStages: number;
+};
+
+export type BreakChoice = {
+  afterSemester: number;
+  trackId: string;
+};
+
+export type MatchResult = "accepted" | "waitlisted" | "rejected";
+
+export type MatchApplication = {
+  trackId: string;
+  rank: number;
+  score?: number;
+  result?: MatchResult;
+};
+
 export type GameState = {
   version: string;
+  /** Normalized unsigned 32-bit seed for this reproducible run. */
+  rngSeed: number;
+  /** Number of random values consumed from the run's seeded stream. */
+  rngCursor: number;
+  /** Monotonic counter used for deterministic ids and timestamps. */
+  transitionCounter: number;
+  /** One-time bilingual notice populated when a V1 save is upgraded. */
+  migrationNotice?: LocalizedText;
   playerName: string;
   difficulty: Difficulty;
   /** 0-based index into the SEMESTERS array. */
@@ -170,6 +268,24 @@ export type GameState = {
   globalWeek: number;
   actionPointsRemaining: number;
   stats: Record<StatKey, number>;
+  archetypeId?: string;
+  npcs: Record<string, NpcState>;
+  research: ResearchState;
+  caseLog: CaseLogEntry[];
+  simLabLog: SimLabLogEntry[];
+  perks: string[];
+  perkPoints: number;
+  equipment: string[];
+  debt: number;
+  sleepDebt: number;
+  injuryRisk: number;
+  activeElective?: string;
+  semesterModifiers: string[];
+  runDeck: string[];
+  leadershipRole?: string;
+  breakChoices: BreakChoice[];
+  matchApplications: MatchApplication[];
+  weekGains: StatBlock;
   /** Snapshot of stats at the start of the current week (for the summary). */
   weekStartStats: Record<StatKey, number>;
   flags: string[];
@@ -187,6 +303,9 @@ export type GameState = {
   /** Set once the player has picked a choice, to show its result before continuing. */
   pendingChoiceId?: string;
   pendingBossId?: string;
+  pendingCaseId: string | undefined;
+  pendingSimLabId: string | undefined;
+  pendingBreakId: string | undefined;
   lastBossResult?: BossResult;
   endingId?: string;
   createdAt: string;

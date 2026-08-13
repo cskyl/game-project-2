@@ -1,25 +1,35 @@
-import { ACHIEVEMENTS_KEY, LANG_KEY, SAVE_KEY } from "./constants";
-import type { GameState, Lang } from "./types";
+import { ACHIEVEMENTS_KEY, LANG_KEY, LEGACY_SAVE_KEY, SAVE_KEY } from "./constants";
+import { parseAndMigrateSave } from "./migration";
+import type { SaveLoadResult } from "./migration";
+import type { GameState, Lang, LocalizedText } from "./types";
 
 // ---------------------------------------------------------------------------
 // Game save (localStorage)
 // ---------------------------------------------------------------------------
 
-export function loadGame(): GameState | null {
+const NO_SAVE_NOTICE: LocalizedText = {
+  en: "No saved run was found.",
+  zh: "没有找到可继续的存档。",
+};
+
+export function loadGameResult(): SaveLoadResult {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw) as GameState;
-    if (!data || typeof data !== "object" || !data.stats) return null;
-    return data;
+    const raw = localStorage.getItem(SAVE_KEY) ?? localStorage.getItem(LEGACY_SAVE_KEY);
+    if (!raw) return { ok: false, reason: "malformed", message: NO_SAVE_NOTICE };
+    return parseAndMigrateSave(raw);
   } catch {
-    return null;
+    return { ok: false, reason: "malformed", message: NO_SAVE_NOTICE };
   }
+}
+
+export function loadGame(): GameState | null {
+  const result = loadGameResult();
+  return result.ok ? result.state : null;
 }
 
 export function saveGame(state: GameState): void {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ ...state, updatedAt: new Date().toISOString() }));
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
   } catch {
     /* storage full or unavailable — ignore */
   }
@@ -28,6 +38,7 @@ export function saveGame(state: GameState): void {
 export function clearSave(): void {
   try {
     localStorage.removeItem(SAVE_KEY);
+    localStorage.removeItem(LEGACY_SAVE_KEY);
   } catch {
     /* ignore */
   }
@@ -35,7 +46,7 @@ export function clearSave(): void {
 
 export function hasSave(): boolean {
   try {
-    return !!localStorage.getItem(SAVE_KEY);
+    return !!(localStorage.getItem(SAVE_KEY) ?? localStorage.getItem(LEGACY_SAVE_KEY));
   } catch {
     return false;
   }

@@ -37,10 +37,14 @@ export const STAT_LABELS: Record<ConditionStatKey, LocalizedText> = {
   love: { en: "Support", zh: "情感支持" },
   research: { en: "Research", zh: "科研" },
   publicImpact: { en: "Community", zh: "社区影响" },
+  focus: { en: "Focus", zh: "专注力" },
+  standing: { en: "Class Standing", zh: "院系评价" },
   money: { en: "Budget", zh: "钱包" },
   wellness: { en: "Wellness", zh: "身心状态" },
   careerReadiness: { en: "Career Readiness", zh: "职业准备度" },
   lifeBalance: { en: "Life Balance", zh: "生活平衡" },
+  researchOutput: { en: "Research Output", zh: "科研产出" },
+  clinicalRecord: { en: "Clinical Record", zh: "临床记录" },
 };
 
 export const STAT_HINTS: Partial<Record<ConditionStatKey, LocalizedText>> = {
@@ -56,6 +60,8 @@ export const STAT_HINTS: Partial<Record<ConditionStatKey, LocalizedText>> = {
   love: { en: "Relationship & support.", zh: "感情与支持。" },
   research: { en: "Academic & research interest.", zh: "学术与科研兴趣。" },
   publicImpact: { en: "Community & access to care.", zh: "社区服务与公益。" },
+  focus: { en: "Mental sharpness for demanding work.", zh: "完成高强度任务时的头脑清晰度。" },
+  standing: { en: "How faculty view your progress.", zh: "老师与院系对你进展的评价。" },
   money: { en: "Life budget.", zh: "生活预算。" },
 };
 
@@ -66,12 +72,13 @@ export const CAREER_STATS: StatKey[] = [
   "empathy",
   "confidence",
 ];
-export const LIFE_STATS: StatKey[] = ["mood", "stress", "stamina", "money"];
+export const LIFE_STATS: StatKey[] = ["mood", "stress", "stamina", "focus", "money"];
 export const LONGTERM_STATS: StatKey[] = [
   "reputation",
   "love",
   "research",
   "publicImpact",
+  "standing",
 ];
 
 // ---------------------------------------------------------------------------

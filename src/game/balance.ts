@@ -16,27 +16,6 @@ import type {
 } from "./types";
 
 // ---------------------------------------------------------------------------
-// Randomness
-// ---------------------------------------------------------------------------
-
-export const randInt = (min: number, max: number): number =>
-  Math.floor(Math.random() * (max - min + 1)) + min;
-
-export const chance = (p: number): boolean => Math.random() < p;
-
-export function weightedPick<T>(items: T[], weightFn: (item: T) => number): T | undefined {
-  if (items.length === 0) return undefined;
-  const total = items.reduce((sum, it) => sum + Math.max(0, weightFn(it)), 0);
-  if (total <= 0) return items[randInt(0, items.length - 1)];
-  let roll = Math.random() * total;
-  for (const it of items) {
-    roll -= Math.max(0, weightFn(it));
-    if (roll <= 0) return it;
-  }
-  return items[items.length - 1];
-}
-
-// ---------------------------------------------------------------------------
 // Stats: clamping, derived values, condition resolution
 // ---------------------------------------------------------------------------
 
@@ -77,6 +56,10 @@ export function getStat(
       return careerReadiness(stats);
     case "lifeBalance":
       return lifeBalance(stats);
+    case "researchOutput":
+      return stats.research;
+    case "clinicalRecord":
+      return Math.round((stats.handSkill + stats.clinicalSense + stats.empathy) / 3);
     default:
       return stats[key];
   }
@@ -198,8 +181,8 @@ export const WARNING_MESSAGES: Record<string, LocalizedText> = {
 export type ThresholdResult = {
   effects: StatBlock;
   warnings: string[];
-  /** true if the critical-stress crisis roll should fire this week. */
-  triggerCrisis: boolean;
+  /** Seeded crisis roll probability; zero outside the critical-stress band. */
+  crisisChance: number;
   hitCriticalStress: boolean;
 };
 
@@ -214,7 +197,7 @@ export function computeThresholds(
 ): ThresholdResult {
   const effects: StatBlock = {};
   const warnings: string[] = [];
-  let triggerCrisis = false;
+  let crisisChance = 0;
   let hitCriticalStress = false;
   const cfg = DIFFICULTY[difficulty];
 
@@ -228,7 +211,7 @@ export function computeThresholds(
     add("stamina", -5);
     warnings.push("criticalStress");
     hitCriticalStress = true;
-    triggerCrisis = chance(0.35);
+    crisisChance = 0.35;
   } else if (stats.stress >= 70) {
     add("mood", -3);
     add("confidence", -1);
@@ -257,5 +240,5 @@ export function computeThresholds(
     warnings.push("negativeMoney");
   }
 
-  return { effects, warnings, triggerCrisis, hitCriticalStress };
+  return { effects, warnings, crisisChance, hitCriticalStress };
 }
