@@ -192,7 +192,7 @@ export const ACTIONS: Action[] = [
       en: "Asking turns out to be a skill too.",
       zh: "开口求助，原来也是一种能力。",
     },
-    cost: 2,
+    cost: 3,
     effects: { reputation: 1, mood: 2 },
     tags: ["social"],
     dynamicWeakest: true,

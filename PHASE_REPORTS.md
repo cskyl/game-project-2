@@ -63,3 +63,39 @@ Deferred gates are not counted as passes.
   ≥14-ending G1 waits for P7 career systems; G8 remains P6 despite the measured
   min-max dominant-action diagnostic; the final unreachable-event requirement
   remains P9 content-fill work.
+
+## P2 — twelve-term calendar and consequential breaks
+
+**Status:** green on `v2/p2-calendar`.
+
+- Landed: **12 semesters × 5 planning weeks**, explicit semester-open decisions,
+  seeded three-offer elective drafts from the 14-item bilingual registry, and
+  three break chapters after semesters 2/5/8 with exactly three player actions
+  each. New bilingual semester-open and break UIs expose term focus, requirements,
+  modifier effects, break payoffs/costs, and turn progress; P8's modifier layer
+  has an honest standard-term fallback rather than invented content.
+- Calendar invariants passed in every run: all 60 unique semester/week pairs,
+  12 valid and duplicate-free three-offer drafts, one selected elective per
+  semester, and one valid track plus exactly three actions in each of the three
+  breaks. Invalid/unoffered electives and invalid/unavailable break inputs were
+  strict no-ops. A selected elective was also verified to activate its central
+  registry hook after test isolation reset.
+- **G3 PASS:** 1,200/1,200 primary runs completed across 10 bots, 40 seeds, and
+  three difficulties under the 20,000-step guard; the longest trace was 910
+  player decisions.
+- **G9 interim PASS:** median run length was **629.5 decisions** (required ≥250
+  for P2; the final gate is ≥350).
+- **G10 PASS:** all 1,200 exact input replays produced byte-identical final
+  states (1,200/1,200), including elective drafts and break transitions.
+- Preserved P1 gates stayed green after the longer calendar: 10 endings were
+  reached; the largest was `operator_owner`, **259/1,200 = 21.58%** (≤25%).
+  Graduation `careerReadiness` mean was **73.403**, population SD **10.907**,
+  and maximum **93**. The maximum run was hands-max/easy/seed `3214545082`.
+- **G11/G12 PASS:** strict TypeScript + Vite production build was clean; the
+  content validator checked 1,187 bilingual values with 0 errors (15 explicit
+  later-phase/shadow warnings); V1 migration and future/malformed refusal
+  fixtures passed. Static render smoke produced all 12 screens in both EN and
+  ZH, including both new P2 screens.
+- Sweep diagnostics beyond P2's gate: event coverage was 92/95 (96.8%); the
+  min-max action-share failure remains correctly deferred to P6/G8. Full
+  ≥14-ending G1 remains P7 work, and final content coverage remains P9 work.

@@ -6,7 +6,11 @@ export const LEGACY_SAVE_KEY = "dsls.save.v1";
 export const LANG_KEY = "dsls.lang";
 export const ACHIEVEMENTS_KEY = "dsls.achievements.v1";
 
-export const WEEKS_PER_SEMESTER = 4;
+/** V2 has five planning weeks in each of its twelve semesters. */
+export const WEEKS_PER_SEMESTER = 5;
+export const SEMESTER_COUNT = 12;
+export const BREAK_AFTER_SEMESTERS = [2, 5, 8] as const;
+export const BREAK_ACTIONS_PER_CHAPTER = 3;
 export const CARDS_DRAWN_PER_WEEK = 3;
 export const MAX_CARDS_PLAYED_PER_WEEK = 2;
 /** How many weeks must pass before a non-crisis event can repeat. */

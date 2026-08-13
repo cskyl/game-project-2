@@ -48,10 +48,12 @@ export type StatBlock = Partial<Record<StatKey, number>>;
 
 export type Screen =
   | "start"
+  | "semesterOpen"
   | "planning"
   | "event"
   | "weeklySummary"
   | "boss"
+  | "breakChapter"
   | "ending";
 
 export type EventCondition = {
@@ -148,6 +150,45 @@ export type Semester = {
   stage: Stage;
   focus: ConditionStatKey[];
   boss: LocalizedText;
+};
+
+/** A semester-long elective or rotation offered during the open screen. */
+export type Elective = {
+  id: string;
+  name: LocalizedText;
+  description: LocalizedText;
+  stage: Array<Stage | "any">;
+  minSemester: number;
+  maxSemester: number;
+  prerequisites?: EventCondition;
+  tags: string[];
+  caseTags?: string[];
+  matchTrackBonus?: Partial<Record<string, number>>;
+  effects?: StatBlock;
+};
+
+/** One of the three actions available after selecting a break track. */
+export type BreakAction = {
+  id: string;
+  title: LocalizedText;
+  description: LocalizedText;
+  effects: StatBlock;
+  tags?: string[];
+  addFlags?: string[];
+};
+
+export type BreakTrack = {
+  id: string;
+  name: LocalizedText;
+  description: LocalizedText;
+  payoff?: LocalizedText;
+  cost?: LocalizedText;
+  availableAfterSemesters?: number[];
+  duration?: number;
+  eligibility?: EventCondition;
+  requirements?: EventCondition;
+  clearsSleepDebtOnCompletion?: boolean;
+  actions: BreakAction[];
 };
 
 export type LogEntry = {
@@ -262,7 +303,7 @@ export type GameState = {
   difficulty: Difficulty;
   /** 0-based index into the SEMESTERS array. */
   semesterIndex: number;
-  /** 1..4 within the current semester. */
+  /** 1..5 within the current semester. */
   weekInSemester: number;
   /** Total weeks elapsed since game start; used for event recency. */
   globalWeek: number;
@@ -280,6 +321,8 @@ export type GameState = {
   sleepDebt: number;
   injuryRisk: number;
   activeElective?: string;
+  /** Seeded draft shown on the semester-open screen. */
+  electiveOffers: string[];
   semesterModifiers: string[];
   runDeck: string[];
   leadershipRole?: string;
@@ -306,6 +349,8 @@ export type GameState = {
   pendingCaseId: string | undefined;
   pendingSimLabId: string | undefined;
   pendingBreakId: string | undefined;
+  /** 0..3 actions taken in the currently selected break chapter. */
+  breakTurn: number;
   lastBossResult?: BossResult;
   endingId?: string;
   createdAt: string;

@@ -10,6 +10,7 @@ import {
   MAX_CARDS_PLAYED_PER_WEEK,
   MONEY_MIN,
   SAVE_VERSION,
+  SEMESTER_COUNT,
   WEEKS_PER_SEMESTER,
 } from "./constants";
 import { INITIAL_STATS } from "./initialState";
@@ -42,6 +43,13 @@ import {
   bossSemesterRamp,
   skillDriftEffects,
 } from "./systems/progression";
+import { openSemester, isBreakSemester } from "./systems/calendar";
+import { canBeginSemester, chooseElectiveState } from "./systems/electives";
+import {
+  chooseBreakTrackState,
+  openBreakChapter,
+  takeBreakActionState,
+} from "./systems/breaks";
 import type {
   Action,
   Boss,
@@ -78,7 +86,7 @@ const BOSS_BY_SEMESTER: Record<number, Boss> = Object.fromEntries(
 export const currentSemester = (s: GameState): Semester => SEMESTERS[s.semesterIndex];
 export const currentSemesterId = (s: GameState): number => s.semesterIndex + 1;
 export const isFinalSemester = (s: GameState): boolean =>
-  s.semesterIndex >= SEMESTERS.length - 1;
+  s.semesterIndex >= SEMESTER_COUNT - 1;
 
 // ---------------------------------------------------------------------------
 // Action availability
@@ -202,6 +210,7 @@ export function newGame(
     sleepDebt: 0,
     injuryRisk: 0,
     activeElective: undefined,
+    electiveOffers: [],
     semesterModifiers: [],
     runDeck: CARDS.map((card) => card.id),
     leadershipRole: undefined,
@@ -211,6 +220,7 @@ export function newGame(
     pendingCaseId: undefined,
     pendingSimLabId: undefined,
     pendingBreakId: undefined,
+    breakTurn: 0,
     weekStartStats: { ...INITIAL_STATS },
     flags: [],
     eventHistory: [],
@@ -228,7 +238,32 @@ export function newGame(
     createdAt,
     updatedAt: createdAt,
   };
-  return startWeek(base, { semesterIndex: 0, weekInSemester: 1 });
+  // The first player decision is the semester-open draft, not a hidden week.
+  return openSemester(base, 0);
+}
+
+/** Select one of the three seeded elective offers for the current semester. */
+export function chooseElective(state: GameState, electiveId: string): GameState {
+  return chooseElectiveState(state, electiveId);
+}
+
+/** Commit the semester-open choice and begin week one. */
+export function beginSemester(state: GameState): GameState {
+  if (!canBeginSemester(state)) return state;
+  return startWeek(state, {
+    semesterIndex: state.semesterIndex,
+    weekInSemester: 1,
+  });
+}
+
+/** Pick the track for a break chapter; actions begin only after this choice. */
+export function chooseBreakTrack(state: GameState, trackId: string): GameState {
+  return chooseBreakTrackState(state, trackId);
+}
+
+/** Take one break action. The third action opens the following semester. */
+export function takeBreakAction(state: GameState, actionId: string): GameState {
+  return takeBreakActionState(state, actionId);
 }
 
 export function chooseAction(state: GameState, actionId: string): GameState {
@@ -461,10 +496,13 @@ export function advanceAfterBoss(state: GameState): GameState {
     });
     return checkEndingAchievements(next);
   }
-  return startWeek(
-    { ...state, pendingBossId: undefined, lastBossResult: undefined },
-    { semesterIndex: state.semesterIndex + 1, weekInSemester: 1 },
-  );
+  const next = transitionState(state, {
+    pendingBossId: undefined,
+    lastBossResult: undefined,
+  });
+  const completedSemester = state.semesterIndex + 1;
+  if (isBreakSemester(completedSemester)) return openBreakChapter(next);
+  return openSemester(next, state.semesterIndex + 1);
 }
 
 // ---------------------------------------------------------------------------

@@ -45,6 +45,7 @@ export type V1GameState = Omit<
   | "sleepDebt"
   | "injuryRisk"
   | "activeElective"
+  | "electiveOffers"
   | "semesterModifiers"
   | "runDeck"
   | "leadershipRole"
@@ -54,6 +55,7 @@ export type V1GameState = Omit<
   | "pendingCaseId"
   | "pendingSimLabId"
   | "pendingBreakId"
+  | "breakTurn"
 > & {
   version: "1.0.0";
   stats: Omit<Record<StatKey, number>, "focus" | "standing">;
@@ -76,10 +78,12 @@ const STAT_KEYS = Object.keys(INITIAL_STATS) as StatKey[];
 const STAT_KEY_SET = new Set<string>(STAT_KEYS);
 const SCREENS = new Set<GameState["screen"]>([
   "start",
+  "semesterOpen",
   "planning",
   "event",
   "weeklySummary",
   "boss",
+  "breakChapter",
   "ending",
 ]);
 const BOSS_OUTCOMES = new Set(["great", "pass", "barely", "struggle"]);
@@ -264,6 +268,10 @@ function isBreakChoice(value: unknown): boolean {
   );
 }
 
+function isBreakTurn(value: unknown): value is number {
+  return isNonNegativeInteger(value) && value <= 3;
+}
+
 function isMatchApplication(value: unknown): value is MatchApplication {
   return (
     isRecord(value) &&
@@ -312,6 +320,7 @@ function isV2State(value: unknown): value is GameState {
     isFiniteNumber(value.sleepDebt) &&
     isFiniteNumber(value.injuryRisk) &&
     isOptionalString(value.activeElective) &&
+    isStringArray(value.electiveOffers) &&
     isStringArray(value.semesterModifiers) &&
     isStringArray(value.runDeck) &&
     isOptionalString(value.leadershipRole) &&
@@ -339,6 +348,7 @@ function isV2State(value: unknown): value is GameState {
     isOptionalString(value.pendingCaseId) &&
     isOptionalString(value.pendingSimLabId) &&
     isOptionalString(value.pendingBreakId) &&
+    isBreakTurn(value.breakTurn) &&
     (value.lastBossResult === undefined || isBossResult(value.lastBossResult)) &&
     isOptionalString(value.endingId) &&
     typeof value.createdAt === "string" &&
@@ -433,6 +443,7 @@ function migrateV1(value: UnknownRecord): SaveLoadResult {
     sleepDebt: 0,
     injuryRisk: 0,
     activeElective: undefined,
+    electiveOffers: [],
     semesterModifiers: [],
     runDeck: CARDS.map((card) => card.id),
     leadershipRole: undefined,
@@ -461,6 +472,7 @@ function migrateV1(value: UnknownRecord): SaveLoadResult {
     pendingCaseId: undefined,
     pendingSimLabId: undefined,
     pendingBreakId: undefined,
+    breakTurn: 0,
     lastBossResult: isBossResult(value.lastBossResult)
       ? value.lastBossResult
       : undefined,
@@ -482,8 +494,20 @@ export function migrateSave(value: unknown): SaveLoadResult {
     return { ok: false, reason: "malformed", message: MALFORMED_NOTICE };
   }
   if (value.version === SAVE_VERSION) {
-    return isV2State(value)
-      ? { ok: true, state: value, migrated: false }
+    // P0/P1 saves predate the calendar fields.  Hydrate only fields that were
+    // absent (an explicitly malformed field still fails strict validation).
+    const hydrated: UnknownRecord = { ...value };
+    let hydratedDefaults = false;
+    if (hydrated.electiveOffers === undefined) {
+      hydrated.electiveOffers = [];
+      hydratedDefaults = true;
+    }
+    if (hydrated.breakTurn === undefined) {
+      hydrated.breakTurn = 0;
+      hydratedDefaults = true;
+    }
+    return isV2State(hydrated)
+      ? { ok: true, state: hydrated, migrated: hydratedDefaults }
       : { ok: false, reason: "malformed", message: MALFORMED_NOTICE };
   }
   if (value.version === "1.0.0") return migrateV1(value);

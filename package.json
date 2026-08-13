@@ -11,6 +11,7 @@
     "balance": "mkdir -p /scratch/$USER/dsls-v2 && esbuild scripts/smoke.mts --bundle --platform=node --format=esm --outfile=/scratch/$USER/dsls-v2/balance.bundle.mjs && node /scratch/$USER/dsls-v2/balance.bundle.mjs",
     "validate-content": "mkdir -p /scratch/$USER/dsls-v2 && esbuild content-gen/validate.mts --bundle --platform=node --format=esm --outfile=/scratch/$USER/dsls-v2/validate.bundle.mjs && node /scratch/$USER/dsls-v2/validate.bundle.mjs",
     "test:migration": "mkdir -p /scratch/$USER/dsls-v2 && esbuild scripts/migration-test.mts --bundle --platform=node --format=esm --outfile=/scratch/$USER/dsls-v2/migration-test.bundle.mjs && node /scratch/$USER/dsls-v2/migration-test.bundle.mjs",
+    "test:render": "mkdir -p /scratch/$USER/dsls-v2 && esbuild scripts/render-smoke.tsx --bundle --platform=node --format=cjs --outfile=/scratch/$USER/dsls-v2/render-smoke.bundle.cjs && node /scratch/$USER/dsls-v2/render-smoke.bundle.cjs",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"

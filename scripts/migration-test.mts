@@ -1,6 +1,8 @@
 import { INITIAL_STATS } from "../src/game/initialState";
 import { migrateSave, type V1GameState } from "../src/game/migration";
 import { nextRandom } from "../src/game/rng";
+import { chooseBreakTrack, takeBreakAction } from "../src/game/engine";
+import { BREAK_TRACKS } from "../src/data/breaks";
 import type { GameState, StatKey } from "../src/game/types";
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -138,6 +140,20 @@ assert(
 const current = migrateSave(migrated.state);
 assert(current.ok && !current.migrated, "complete V2 state was not accepted");
 
+// P1 V2 saves predate the calendar fields. They remain loadable through the
+// narrow, explicit default hydration path, while malformed values are still
+// rejected by the strict validator.
+const { electiveOffers: _oldOffers, breakTurn: _oldBreakTurn, ...p1Save } = migrated.state;
+const p1Loaded = migrateSave(p1Save);
+assert(p1Loaded.ok && p1Loaded.migrated, "P1 V2 save was not hydrated");
+assert(p1Loaded.state.electiveOffers.length === 0, "P1 elective defaults wrong");
+assert(p1Loaded.state.breakTurn === 0, "P1 break default wrong");
+assertRefusedWithoutThrow(
+  { ...p1Save, electiveOffers: "not-an-array" },
+  "malformed",
+  "P1 save with malformed elective offers",
+);
+
 const invalidRngState = {
   ...migrated.state,
   rngSeed: Number.NaN,
@@ -150,6 +166,45 @@ assert(Number.isFinite(firstRngState.rngSeed), "invalid RNG seed was not normali
 assert(firstRngState.rngCursor === 1, "invalid RNG cursor was not normalized");
 assert(secondRngState.rngCursor === 2, "normalized RNG cursor did not advance");
 assert(firstRandom !== secondRandom, "invalid RNG state produced a dead constant stream");
+
+// Calendar completion contracts: every selected track is exactly three turns;
+// Rest clears sleep debt, while the board camp flag is earned regardless of
+// which of its three authored actions is repeated.
+const fresh = migrated.state;
+const rest = BREAK_TRACKS.find((track) => track.id === "rest_and_reset");
+assert(rest, "rest track missing");
+let breakState: GameState = {
+  ...fresh,
+  semesterIndex: 1,
+  screen: "breakChapter",
+  pendingBreakId: undefined,
+  breakTurn: 0,
+  sleepDebt: 18,
+};
+breakState = chooseBreakTrack(breakState, rest.id);
+assert(breakState.pendingBreakId === rest.id, "rest track did not select");
+for (let turn = 0; turn < 3; turn += 1) {
+  breakState = takeBreakAction(breakState, rest.actions[turn].id);
+}
+assert(breakState.breakTurn === 0, "break did not close after three turns");
+assert(breakState.screen === "semesterOpen", "break did not open next semester");
+assert(breakState.sleepDebt === 0, "rest break did not clear sleep debt");
+
+const board = BREAK_TRACKS.find((track) => track.id === "board_prep_camp");
+assert(board, "board prep track missing");
+let boardState: GameState = {
+  ...fresh,
+  semesterIndex: 7,
+  screen: "breakChapter",
+  pendingBreakId: undefined,
+  breakTurn: 0,
+  flags: [],
+};
+boardState = chooseBreakTrack(boardState, board.id);
+for (let turn = 0; turn < 3; turn += 1) {
+  boardState = takeBreakAction(boardState, board.actions[turn].id);
+}
+assert(boardState.flags.includes("inbde_ready"), "board prep did not grant inbde_ready");
 
 console.log(
   "G12 PASS: V1 migration sanitized; complete V2 validated; future/malformed fixtures refused without throw; RNG recovered",

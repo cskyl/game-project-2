@@ -1,6 +1,7 @@
 import { diffStats, WARNING_MESSAGES } from "../game/balance";
 import { currentSemester } from "../game/selectors";
 import { V2_UI_TEXT } from "../data/uiText";
+import { WEEKS_PER_SEMESTER } from "../game/constants";
 import { fmt, useLang } from "../i18n";
 import type { GameState } from "../game/types";
 import { EffectChips } from "./EffectChips";
@@ -69,7 +70,7 @@ export function WeeklySummary({
       <div className="summary-progress">
         <span className="muted">{ui.semesterProgress}</span>
         <div className="week-dots" aria-hidden="true">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: WEEKS_PER_SEMESTER }).map((_, i) => (
             <span key={i} className={"week-dot" + (i < state.weekInSemester ? " on" : "")} />
           ))}
         </div>

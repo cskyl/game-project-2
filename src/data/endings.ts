@@ -234,7 +234,7 @@ export const ENDINGS: Ending[] = [
     title: { en: "The Thoughtful Operator", zh: "会经营，也会照护" },
     subtitle: { en: "A practice is a system of care", zh: "诊所也是一套照护系统" },
     condition: {
-      minStats: { money: 150, confidence: 65, reputation: 50 },
+      minStats: { money: 190, confidence: 65, reputation: 50 },
       maxStats: { careerReadiness: 75 },
     },
     text: {

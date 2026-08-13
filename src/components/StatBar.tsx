@@ -8,6 +8,7 @@ export function StatBar({
   severity,
   hint,
   delta,
+  thresholds = [],
 }: {
   label: string;
   value: number;
@@ -16,6 +17,7 @@ export function StatBar({
   severity: Severity;
   hint?: string;
   delta?: number;
+  thresholds?: number[];
 }) {
   const pct = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
   return (
@@ -42,7 +44,36 @@ export function StatBar({
         aria-label={label}
       >
         <div className={"statbar-fill sev-" + severity} style={{ width: pct + "%" }} />
+        {thresholds.map((threshold) => {
+          const thresholdPct = Math.max(
+            0,
+            Math.min(100, ((threshold - min) / (max - min)) * 100),
+          );
+          return (
+            <span
+              aria-hidden="true"
+              className="statbar-threshold"
+              key={threshold}
+              style={{ left: `${thresholdPct}%` }}
+            />
+          );
+        })}
       </div>
+      {thresholds.length > 0 && (
+        <div className="statbar-threshold-labels" aria-hidden="true">
+          {thresholds.map((threshold) => {
+            const thresholdPct = Math.max(
+              0,
+              Math.min(100, ((threshold - min) / (max - min)) * 100),
+            );
+            return (
+              <span key={threshold} style={{ left: `${thresholdPct}%` }}>
+                {threshold}
+              </span>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

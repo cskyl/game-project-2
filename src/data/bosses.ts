@@ -486,4 +486,48 @@ export const BOSSES: Boss[] = [
       },
     },
   },
+  {
+    id: "boss_d4_summer_graduation_capstone",
+    semesterId: 12,
+    title: { en: "Graduation Capstone Review", zh: "毕业综合项目评审" },
+    description: {
+      en: "One last review of the clinician, colleague, and whole person you built over four years. Career decisions are ahead; this moment is yours.",
+      zh: "最后一次回望这四年里成长起来的临床工作者、同事，以及完整的你。职业选择还在前方；这一刻属于你。",
+    },
+    requiredStats: [
+      { stat: "careerReadiness", weight: 0.55 },
+      { stat: "standing", weight: 0.2 },
+      { stat: "lifeBalance", weight: 0.25 },
+    ],
+    outcomes: {
+      great: {
+        text: {
+          en: "The panel sees the whole picture: capable hands, a clear next step, and enough of yourself left to enjoy it. You made it.",
+          zh: "评审看见了完整的图景：可靠的双手、清晰的下一步，还有足够完整的自己去享受它。你做到了。",
+        },
+        effects: { confidence: 6, reputation: 4, standing: 3, stress: -8, mood: 5 },
+      },
+      pass: {
+        text: {
+          en: "A grounded, honest pass. You do not need to have every answer yet; you have earned the right to find them.",
+          zh: "一次踏实而诚实的通过。你不必现在就拥有所有答案；你已经赢得了寻找答案的资格。",
+        },
+        effects: { confidence: 4, standing: 2, stress: -5, mood: 3 },
+      },
+      barely: {
+        text: {
+          en: "You are a little frayed, but the work is real and the line is crossed. Let the next chapter begin at a human pace.",
+          zh: "你有些疲惫，但做过的事是真的，终点线也确实跨过去了。让下一章以人的节奏开始吧。",
+        },
+        effects: { confidence: 2, stress: 3, mood: 1 },
+      },
+      struggle: {
+        text: {
+          en: "The capstone felt heavy. Still, the faculty name what is there and what can grow. Graduation is not a verdict; it is a doorway.",
+          zh: "毕业项目压得人很沉。但老师也说清了你已经拥有的、以及还能长出来的东西。毕业不是判决，是一扇门。",
+        },
+        effects: { confidence: 2, stress: 6, mood: -2, standing: 2 },
+      },
+    },
+  },
 ];

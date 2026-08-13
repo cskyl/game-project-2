@@ -89,4 +89,12 @@ export const SEMESTERS: Semester[] = [
     focus: ["careerReadiness", "lifeBalance"],
     boss: { en: "Final Path Decision", zh: "最终方向的决定" },
   },
+  {
+    id: 12,
+    name: { en: "D4 Summer · Graduation Capstone", zh: "D4 夏季 · 毕业综合项目" },
+    theme: { en: "The Last Stretch, Together", zh: "一起走完最后一段路" },
+    stage: "advanced",
+    focus: ["careerReadiness", "lifeBalance", "standing"],
+    boss: { en: "Graduation Capstone Review", zh: "毕业综合项目评审" },
+  },
 ];

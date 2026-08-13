@@ -104,3 +104,55 @@ implementation detail open. The frozen design remains authoritative.
   distinct health crisis named by the priority-95 ending. The `health_crisis`
   flag therefore remains a declared P6 producer for a forced illness/injury
   outcome rather than being attached retroactively to a generic wellness event.
+
+## 2026-08-12 — P2 content contracts
+
+- **Semester-12 transition boss.** §5.11 says the semester-12 boss is replaced
+  by the Match decision screen, while P2 still needs one boss per semester for
+  a playable, validated calendar. P2 therefore adds a gentle graduation
+  capstone review as a temporary semester-12 boss. P7 must replace that boss
+  resolution with Match while preserving the capstone text as an optional
+  graduation interstitial; it is not intended to compete with Match scoring.
+- **Break action granularity.** Each break track exposes exactly three
+  repeatable, meaningful action payloads. The engine may take one action per
+  turn for three turns; the data does not prescribe an order, so players can
+  pursue a coherent track rather than solve a hidden mini-puzzle.
+- **Break availability.** The four ordinary break tracks are available after
+  semesters 2, 5, and 8 as §3.3 specifies. Only Board Prep Camp is restricted
+  to the break after semester 8 (immediately before semester 9).
+- **Elective availability.** The frozen design does not specify a minimum
+  offer-pool size or early-semester introductory electives. Research selective
+  and teaching assistantship are therefore available from D1 Autumn (with
+  gentle, low-stakes hooks), ensuring every semester can draw three distinct
+  eligible offers without silently falling back to ineligible content.
+- **Registry reset seam.** Elective hooks register at module load and expose
+  `registerElectiveModifiers()` so deterministic harnesses that reset the
+  central registry can restore data-defined hooks without duplicating engine
+  conditionals.
+- **Break system handoff.** The externship's case-log entry payoff is reserved
+  for the P4 case system; P2 applies its clinical/public-impact payload and
+  keeps the player-facing copy honest until P4 can append a real case-log
+  record. Rest data marks `clearsSleepDebtOnCompletion`; the P2 calendar owns
+  applying that resource reset when the break system is wired end to end.
+- **Sixty-week balance carry-forward.** Moving from the inherited 44-week run
+  to the frozen 60-week calendar exposed `ask_help` as a two-AP hybrid training
+  action: it could raise an untrained core skill while also adding mood and
+  reputation, undercutting the visible three-AP training blocks over sixteen
+  additional weeks. Its cost is now three AP. The effect, weekly eligibility,
+  and the §4.2 positive-gain floor are unchanged.
+- **Work-break tradeoff.** A three-turn Work and Save chapter now pays
+  14/12/6 money, with one point of hand skill on the assisting shift, while
+  each turn applies the advertised `knowledge: -2` drift. This remains a large
+  immediate financial fork without making two work breaks simultaneously fund
+  the whole run and preserve a generalist maximum-readiness build.
+- **Interim operator threshold.** Until P6 introduces debt, interest, rent, and
+  real income hooks, ordinary V1 event flows leave graduation money clustered
+  near the current 200 cap. The interim `operator_owner` build ending therefore
+  requires 190 money rather than 150. P6 must retune this against debt and work
+  outcomes; this is not the P7 Match gate for private practice.
+- **Forward UI seams.** P2 shows an honest standard-term fallback because P8
+  has not yet authored semester modifiers; P8 owns replacing the count-only
+  active state with each modifier's bilingual name, explanation, and hook
+  effects in the persistent strip. P10 still owns the frozen single-column
+  mobile sticky AP/stat header. P2 does implement the functional §8.3 stat
+  threshold ticks and fully localizes every current modifier-hook description.

@@ -1,16 +1,21 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { BossPanel } from "./components/BossPanel";
+import { BreakChapter } from "./components/BreakChapter";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { EndingScreen } from "./components/EndingScreen";
 import { EventPanel } from "./components/EventPanel";
 import { GameLayout } from "./components/GameLayout";
 import { PlanningScreen } from "./components/PlanningScreen";
+import { SemesterOpen } from "./components/SemesterOpen";
 import { StartScreen } from "./components/StartScreen";
 import { WeeklySummary } from "./components/WeeklySummary";
 import { BOSSES } from "./data/bosses";
 import {
   advanceAfterBoss,
+  beginSemester,
   chooseAction,
+  chooseBreakTrack,
+  chooseElective,
   continueAfterEvent,
   continueAfterWeeklySummary,
   finishWeek,
@@ -19,6 +24,7 @@ import {
   playCard,
   resolveBoss,
   resolveEventChoice,
+  takeBreakAction,
 } from "./game/engine";
 import { getEnding, getPendingEvent } from "./game/selectors";
 import {
@@ -135,6 +141,14 @@ export default function App() {
         onSave={handleSaveClick}
         onRestart={() => setDialog("restart")}
       >
+        {game.screen === "semesterOpen" && (
+          <SemesterOpen
+            state={game}
+            onChoose={(id) => apply((s) => chooseElective(s, id))}
+            onBegin={() => apply(beginSemester)}
+          />
+        )}
+
         {game.screen === "planning" && (
           <PlanningScreen
             state={game}
@@ -178,6 +192,14 @@ export default function App() {
               </button>
             </div>
           ))}
+
+        {game.screen === "breakChapter" && (
+          <BreakChapter
+            state={game}
+            onChooseTrack={(id) => apply((s) => chooseBreakTrack(s, id))}
+            onTakeAction={(id) => apply((s) => takeBreakAction(s, id))}
+          />
+        )}
       </GameLayout>
     );
   }

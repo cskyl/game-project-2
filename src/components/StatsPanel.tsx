@@ -7,6 +7,7 @@ import {
   useLang,
 } from "../i18n";
 import { careerReadiness, lifeBalance, wellness } from "../game/selectors";
+import { DIFFICULTY } from "../game/constants";
 import type { GameState, StatKey } from "../game/types";
 import { StatBar, type Severity } from "./StatBar";
 
@@ -34,6 +35,16 @@ export function StatsPanel({ state }: { state: GameState }) {
   const renderStat = (stat: StatKey) => {
     const v = state.stats[stat];
     const isMoney = stat === "money";
+    const thresholds =
+      stat === "stress"
+        ? [70, DIFFICULTY[state.difficulty].stressCritical]
+        : stat === "mood"
+          ? [20, 40, 70]
+          : stat === "stamina"
+            ? [25]
+            : stat === "focus"
+              ? [30]
+              : [];
     return (
       <StatBar
         key={stat}
@@ -43,6 +54,7 @@ export function StatsPanel({ state }: { state: GameState }) {
         max={isMoney ? 200 : 100}
         severity={severityFor(stat, v)}
         hint={t(STAT_HINTS[stat])}
+        thresholds={thresholds}
       />
     );
   };

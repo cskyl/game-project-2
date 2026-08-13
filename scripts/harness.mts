@@ -1,15 +1,30 @@
 import { ACTIONS } from "../src/data/actions";
 import { BOSSES } from "../src/data/bosses";
+import { BREAK_TRACKS } from "../src/data/breaks";
 import { CARDS } from "../src/data/cards";
+import {
+  ELECTIVES,
+  registerElectiveModifiers,
+} from "../src/data/electives";
 import { ENDINGS } from "../src/data/endings";
 import { EVENTS } from "../src/data/events";
 import { SEMESTERS } from "../src/data/semesters";
 import { careerReadiness, evaluateCondition } from "../src/game/balance";
-import { ALL_STATS, MONEY_MAX, MONEY_MIN } from "../src/game/constants";
+import {
+  ALL_STATS,
+  BREAK_ACTIONS_PER_CHAPTER,
+  BREAK_AFTER_SEMESTERS,
+  MONEY_MAX,
+  MONEY_MIN,
+  WEEKS_PER_SEMESTER,
+} from "../src/game/constants";
 import {
   actionStatus,
   advanceAfterBoss,
+  beginSemester,
   chooseAction,
+  chooseBreakTrack,
+  chooseElective,
   continueAfterEvent,
   continueAfterWeeklySummary,
   finishWeek,
@@ -17,6 +32,7 @@ import {
   playCard,
   resolveBoss,
   resolveEventChoice,
+  takeBreakAction,
 } from "../src/game/engine";
 import { getEnding, getPendingEvent } from "../src/game/selectors";
 import { migrateSave } from "../src/game/migration";
@@ -183,6 +199,8 @@ const BOTS: Bot[] = [
 ];
 
 type PlayerInput =
+  | { type: "chooseElective"; id: string }
+  | { type: "beginSemester" }
   | { type: "action"; id: string }
   | { type: "card"; id: string }
   | { type: "finishWeek" }
@@ -190,13 +208,19 @@ type PlayerInput =
   | { type: "continueEvent" }
   | { type: "continueSummary" }
   | { type: "resolveBoss" }
-  | { type: "advanceBoss" };
+  | { type: "advanceBoss" }
+  | { type: "chooseBreakTrack"; id: string }
+  | { type: "breakAction"; id: string };
 
 type RunResult = {
   finalState: GameState;
   trace: PlayerInput[];
   eventsSeen: string[];
   actionCounts: Record<string, number>;
+  electiveChoices: string[];
+  breakActionCounts: Record<number, number>;
+  weeksSeen: string[];
+  semesterOpenCount: number;
 };
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -288,8 +312,60 @@ function pickEventChoice(state: GameState, bot: Bot): string {
   return eligible[index].id;
 }
 
+function pickElective(state: GameState, bot: Bot): string {
+  assert(
+    state.electiveOffers.length > 0,
+    `${bot.id}: semester ${state.semesterIndex + 1} has no elective offers`,
+  );
+  const index =
+    bot.mode === "chaos"
+      ? mix32(state.rngSeed ^ Math.imul(state.semesterIndex + 1, 0x9e37_79b9)) %
+        state.electiveOffers.length
+      : (state.semesterIndex + bot.choiceOffset) % state.electiveOffers.length;
+  return state.electiveOffers[index];
+}
+
+function eligibleBreakTracks(state: GameState) {
+  const semesterId = state.semesterIndex + 1;
+  return BREAK_TRACKS.filter(
+    (track) =>
+      track.availableAfterSemesters.includes(semesterId) &&
+      evaluateCondition(
+        state.stats,
+        state.flags,
+        semesterId,
+        track.eligibility,
+      ),
+  );
+}
+
+function pickBreakTrack(state: GameState, bot: Bot): string {
+  const eligible = eligibleBreakTracks(state);
+  assert(
+    eligible.length > 0,
+    `${bot.id}: break after semester ${state.semesterIndex + 1} has no eligible track`,
+  );
+  const index =
+    bot.mode === "chaos"
+      ? mix32(state.rngSeed ^ Math.imul(state.semesterIndex + 1, 0x85eb_ca6b)) %
+        eligible.length
+      : (state.semesterIndex + bot.choiceOffset) % eligible.length;
+  return eligible[index].id;
+}
+
+function pickBreakAction(state: GameState, bot: Bot): string {
+  const track = BREAK_TRACKS.find((entry) => entry.id === state.pendingBreakId);
+  assert(track, `${bot.id}: selected break track ${state.pendingBreakId ?? "missing"} does not exist`);
+  const index = (state.breakTurn + bot.choiceOffset) % track.actions.length;
+  return track.actions[index].id;
+}
+
 function applyInput(state: GameState, input: PlayerInput): GameState {
   switch (input.type) {
+    case "chooseElective":
+      return chooseElective(state, input.id);
+    case "beginSemester":
+      return beginSemester(state);
     case "action":
       return chooseAction(state, input.id);
     case "card":
@@ -306,6 +382,10 @@ function applyInput(state: GameState, input: PlayerInput): GameState {
       return resolveBoss(state);
     case "advanceBoss":
       return advanceAfterBoss(state);
+    case "chooseBreakTrack":
+      return chooseBreakTrack(state, input.id);
+    case "breakAction":
+      return takeBreakAction(state, input.id);
   }
 }
 
@@ -325,11 +405,50 @@ function checkState(state: GameState, label: string): void {
   assert(state.rngCursor >= 0, `${label}: negative RNG cursor`);
 }
 
+function checkElectiveDraft(state: GameState, label: string): void {
+  const semesterId = state.semesterIndex + 1;
+  const semester = SEMESTERS[state.semesterIndex];
+  assert(semester, `${label}: missing semester ${semesterId}`);
+  assert(
+    state.electiveOffers.length === 3,
+    `${label}: semester ${semesterId} expected 3 elective offers, got ${state.electiveOffers.length}`,
+  );
+  assert(
+    new Set(state.electiveOffers).size === state.electiveOffers.length,
+    `${label}: semester ${semesterId} elective draft contains duplicates`,
+  );
+  for (const electiveId of state.electiveOffers) {
+    const elective = ELECTIVES.find((entry) => entry.id === electiveId);
+    assert(elective, `${label}: unknown elective offer ${electiveId}`);
+    assert(
+      elective.stage.includes("any") || elective.stage.includes(semester.stage),
+      `${label}: elective ${electiveId} is invalid for stage ${semester.stage}`,
+    );
+    assert(
+      semesterId >= elective.minSemester && semesterId <= elective.maxSemester,
+      `${label}: elective ${electiveId} is invalid for semester ${semesterId}`,
+    );
+    assert(
+      evaluateCondition(
+        state.stats,
+        state.flags,
+        semesterId,
+        elective.prerequisites,
+      ),
+      `${label}: elective ${electiveId} has unmet prerequisites`,
+    );
+  }
+}
+
 function playPrimary(bot: Bot, difficulty: Difficulty, seed: number): RunResult {
   let state = newGame(difficulty, "Harness", { seed });
   const trace: PlayerInput[] = [];
   const eventsSeen = new Set<string>();
   const actionCounts: Record<string, number> = {};
+  const electiveChoices: string[] = [];
+  const breakActionCounts: Record<number, number> = {};
+  const weeksSeen = new Set<string>();
+  let semesterOpenCount = 0;
 
   const apply = (input: PlayerInput) => {
     assert(trace.length < GUARD_LIMIT, `${bot.id}/${difficulty}/${seed}: guard hit`);
@@ -340,7 +459,26 @@ function playPrimary(bot: Bot, difficulty: Difficulty, seed: number): RunResult 
   while (state.screen !== "ending") {
     checkState(state, `${bot.id}/${difficulty}/${seed}`);
     switch (state.screen) {
+      case "semesterOpen": {
+        const label = `${bot.id}/${difficulty}/${seed}`;
+        checkElectiveDraft(state, label);
+        semesterOpenCount += 1;
+        const electiveId = pickElective(state, bot);
+        apply({ type: "chooseElective", id: electiveId });
+        assert(
+          state.activeElective === electiveId,
+          `${label}: elective ${electiveId} could not be selected`,
+        );
+        electiveChoices.push(electiveId);
+        apply({ type: "beginSemester" });
+        assert(
+          state.screen === "planning",
+          `${label}: selected elective did not begin semester ${state.semesterIndex + 1}`,
+        );
+        break;
+      }
       case "planning": {
+        weeksSeen.add(`${state.semesterIndex + 1}:${state.weekInSemester}`);
         let actionTurn = 0;
         while (state.actionPointsRemaining > 0) {
           const actionId = pickAction(state, bot, actionTurn);
@@ -378,6 +516,38 @@ function playPrimary(bot: Bot, difficulty: Difficulty, seed: number): RunResult 
       case "boss":
         apply(state.lastBossResult ? { type: "advanceBoss" } : { type: "resolveBoss" });
         break;
+      case "breakChapter": {
+        const afterSemester = state.semesterIndex + 1;
+        if (!state.pendingBreakId) {
+          const choicesBefore = state.breakChoices.length;
+          const trackId = pickBreakTrack(state, bot);
+          apply({ type: "chooseBreakTrack", id: trackId });
+          assert(
+            state.pendingBreakId === trackId &&
+              state.breakChoices.length === choicesBefore + 1,
+            `${bot.id}/${difficulty}/${seed}: break track ${trackId} was not recorded`,
+          );
+        } else {
+          const turnBefore = state.breakTurn;
+          const actionId = pickBreakAction(state, bot);
+          apply({ type: "breakAction", id: actionId });
+          breakActionCounts[afterSemester] =
+            (breakActionCounts[afterSemester] ?? 0) + 1;
+          if (turnBefore + 1 < BREAK_ACTIONS_PER_CHAPTER) {
+            assert(
+              state.screen === "breakChapter" && state.breakTurn === turnBefore + 1,
+              `${bot.id}/${difficulty}/${seed}: break turn ${turnBefore + 1} did not advance exactly once`,
+            );
+          } else {
+            assert(
+              state.screen === "semesterOpen" &&
+                state.semesterIndex + 1 === afterSemester + 1,
+              `${bot.id}/${difficulty}/${seed}: third break action did not open semester ${afterSemester + 1}`,
+            );
+          }
+        }
+        break;
+      }
       default:
         throw new Error(
           `${bot.id}/${difficulty}/${seed}: unsupported screen ${state.screen}`,
@@ -394,8 +564,54 @@ function playPrimary(bot: Bot, difficulty: Difficulty, seed: number): RunResult 
     state.bossHistory.length === BOSSES.length,
     `${bot.id}/${difficulty}/${seed}: expected ${BOSSES.length} bosses, got ${state.bossHistory.length}`,
   );
+  assert(
+    state.globalWeek === SEMESTERS.length * WEEKS_PER_SEMESTER,
+    `${bot.id}/${difficulty}/${seed}: expected ${SEMESTERS.length * WEEKS_PER_SEMESTER} weeks, got ${state.globalWeek}`,
+  );
+  assert(
+    weeksSeen.size === SEMESTERS.length * WEEKS_PER_SEMESTER,
+    `${bot.id}/${difficulty}/${seed}: expected ${SEMESTERS.length * WEEKS_PER_SEMESTER} unique planning weeks, got ${weeksSeen.size}`,
+  );
+  for (const semester of SEMESTERS) {
+    for (let week = 1; week <= WEEKS_PER_SEMESTER; week += 1) {
+      assert(
+        weeksSeen.has(`${semester.id}:${week}`),
+        `${bot.id}/${difficulty}/${seed}: missing semester ${semester.id} week ${week}`,
+      );
+    }
+  }
+  assert(
+    semesterOpenCount === SEMESTERS.length &&
+      electiveChoices.length === SEMESTERS.length,
+    `${bot.id}/${difficulty}/${seed}: expected ${SEMESTERS.length} semester opens/electives, got ${semesterOpenCount}/${electiveChoices.length}`,
+  );
+  assert(
+    state.breakChoices.length === BREAK_AFTER_SEMESTERS.length,
+    `${bot.id}/${difficulty}/${seed}: expected ${BREAK_AFTER_SEMESTERS.length} break tracks, got ${state.breakChoices.length}`,
+  );
+  for (const afterSemester of BREAK_AFTER_SEMESTERS) {
+    assert(
+      state.breakChoices.filter(
+        (choice) => choice.afterSemester === afterSemester,
+      ).length === 1,
+      `${bot.id}/${difficulty}/${seed}: expected one break track after semester ${afterSemester}`,
+    );
+    assert(
+      breakActionCounts[afterSemester] === BREAK_ACTIONS_PER_CHAPTER,
+      `${bot.id}/${difficulty}/${seed}: break after semester ${afterSemester} expected ${BREAK_ACTIONS_PER_CHAPTER} actions, got ${breakActionCounts[afterSemester] ?? 0}`,
+    );
+  }
   assert(getEnding(state)?.id, `${bot.id}/${difficulty}/${seed}: missing ending`);
-  return { finalState: state, trace, eventsSeen: [...eventsSeen], actionCounts };
+  return {
+    finalState: state,
+    trace,
+    eventsSeen: [...eventsSeen],
+    actionCounts,
+    electiveChoices,
+    breakActionCounts,
+    weeksSeen: [...weeksSeen],
+    semesterOpenCount,
+  };
 }
 
 function replay(
@@ -443,9 +659,19 @@ function contentChecks(): void {
     ["card", CARDS.map((item) => item.id)],
     ["ending", ENDINGS.map((item) => item.id)],
     ["action", ACTIONS.map((item) => item.id)],
+    ["elective", ELECTIVES.map((item) => item.id)],
+    ["break track", BREAK_TRACKS.map((item) => item.id)],
   ] as const) {
     assert(new Set(ids).size === ids.length, `duplicate ${label} id`);
   }
+  assert(ELECTIVES.length === 14, `expected 14 electives, got ${ELECTIVES.length}`);
+  assert(BREAK_TRACKS.length === 5, `expected 5 break tracks, got ${BREAK_TRACKS.length}`);
+  assert(
+    BREAK_TRACKS.every(
+      (track) => track.actions.length === BREAK_ACTIONS_PER_CHAPTER,
+    ),
+    `every break track must expose exactly ${BREAK_ACTIONS_PER_CHAPTER} actions`,
+  );
 }
 
 function foundationChecks(): void {
@@ -502,6 +728,20 @@ function foundationChecks(): void {
   }
   assert(conflictCaught, "conflicting modifier redefinition was accepted");
   resetModifierRegistryForTests();
+  registerElectiveModifiers();
+  const electiveProbeState: GameState = {
+    ...newGame("normal", "Elective Registry Probe", { seed: 43 }),
+    activeElective: "dental_materials_seminar",
+  };
+  const electiveHooks = collectHooks(electiveProbeState);
+  assert(
+    electiveHooks.length > 0,
+    "P2 selected elective did not activate its registered hooks after test reset",
+  );
+  assert(
+    applyActionHooks({ knowledge: 10 }, ["study"], electiveHooks).knowledge === 11,
+    "P2 selected elective hook did not change its tagged action effect",
+  );
 
   const randomSequence = (seed: number): number[] => {
     let state = newGame("normal", "RNG Probe", { seed });
@@ -591,6 +831,45 @@ function foundationChecks(): void {
     "P1 boss ramp is not monotonic non-increasing",
   );
   assert(ramps[ramps.length - 1] === -8, "P1 boss ramp did not reach its documented -8 cap");
+
+  const unopened = newGame("normal", "P2 Transition Probe", { seed: 44 });
+  assert(unopened.screen === "semesterOpen", "P2 new game skipped semester-open screen");
+  const invalidElective = chooseElective(unopened, "not_an_elective");
+  assert(
+    invalidElective === unopened,
+    "P2 invalid elective changed state instead of a strict no-op",
+  );
+  const unofferedElective = ELECTIVES.find(
+    (entry) => !unopened.electiveOffers.includes(entry.id),
+  );
+  assert(unofferedElective, "P2 transition probe could not find an unoffered elective");
+  assert(
+    chooseElective(unopened, unofferedElective.id) === unopened,
+    "P2 unoffered elective changed state instead of a strict no-op",
+  );
+  assert(
+    beginSemester(unopened) === unopened,
+    "P2 semester began without an elective selection",
+  );
+  const invalidBreakState: GameState = {
+    ...unopened,
+    screen: "breakChapter",
+    semesterIndex: 1,
+    pendingBreakId: undefined,
+    breakTurn: 0,
+  };
+  assert(
+    chooseBreakTrack(invalidBreakState, "not_a_break_track") === invalidBreakState,
+    "P2 invalid break track changed state instead of a strict no-op",
+  );
+  assert(
+    chooseBreakTrack(invalidBreakState, "board_prep_camp") === invalidBreakState,
+    "P2 unavailable board-prep track changed state before semester 8",
+  );
+  assert(
+    takeBreakAction(invalidBreakState, "not_a_break_action") === invalidBreakState,
+    "P2 break action changed state before selecting a track",
+  );
 }
 
 const quick = process.argv.includes("--quick");
@@ -616,6 +895,8 @@ let maxReadinessRun:
       seed: number;
       endingId: string;
       stats: GameState["stats"];
+      electiveChoices: string[];
+      breakChoices: GameState["breakChoices"];
     }
   | undefined;
 
@@ -675,6 +956,8 @@ for (let botIndex = 0; botIndex < BOTS.length; botIndex += 1) {
           seed,
           endingId,
           stats: primary.finalState.stats,
+          electiveChoices: primary.electiveChoices,
+          breakChoices: primary.finalState.breakChoices,
         };
       }
       endings.set(endingId, (endings.get(endingId) ?? 0) + 1);
@@ -752,19 +1035,23 @@ const deadEvents = EVENTS.filter((event) => !eventsSeen.has(event.id)).map(
   (event) => event.id,
 );
 const elapsedSeconds = (performance.now() - startedAt) / 1_000;
+const medianDecisions = median(decisions);
 
 console.log(
-  `P1 ${quick ? "SMOKE" : "BALANCE"}: ${completed} primary + ${deterministicReplays} exact replays in ${elapsedSeconds.toFixed(2)}s`,
+  `P2 ${quick ? "SMOKE" : "BALANCE"}: ${completed} primary + ${deterministicReplays} exact replays in ${elapsedSeconds.toFixed(2)}s`,
 );
 console.log(
-  `Content: events=${EVENTS.length}, cards=${CARDS.length}, endings=${ENDINGS.length}, actions=${ACTIONS.length}, bots=${BOTS.length}`,
+  `Content: events=${EVENTS.length}, cards=${CARDS.length}, endings=${ENDINGS.length}, actions=${ACTIONS.length}, electives=${ELECTIVES.length}, break tracks=${BREAK_TRACKS.length}, bots=${BOTS.length}`,
 );
 console.log(
-  "P1 foundation PASS: modifier registry, soft-cap bands/floor/sign, drift, AP curve, boss ramp",
+  "P0/P1 foundation PASS: modifier registry, soft-cap bands/floor/sign, drift, AP curve, boss ramp",
+);
+console.log(
+  `P2 calendar PASS: ${SEMESTERS.length} semesters × ${WEEKS_PER_SEMESTER} weeks; breaks after ${BREAK_AFTER_SEMESTERS.join("/")} × ${BREAK_ACTIONS_PER_CHAPTER} turns; seeded three-offer drafts`,
 );
 console.log(`Endings (${endings.size}): ${endingReport}`);
 console.log(
-  `Observed: CR mean=${readinessMean.toFixed(3)} population-sd=${readinessPopulationSd.toFixed(3)} max=${readinessMax.toFixed(3)}; decisions median=${median(decisions)} max=${maxDecisions}`,
+  `Observed: CR mean=${readinessMean.toFixed(3)} population-sd=${readinessPopulationSd.toFixed(3)} max=${readinessMax.toFixed(3)}; decisions median=${medianDecisions} max=${maxDecisions}`,
 );
 console.log(`CR mean by bot: ${readinessByBotReport}`);
 console.log(`Graduation stats mean±population-SD: ${graduationStatsReport}`);
@@ -773,7 +1060,7 @@ console.log(
 );
 console.log(`Endings by bot: ${endingsByBotReport}`);
 console.log(
-  `Max CR run: value=${maxReadinessRun.value} bot=${maxReadinessRun.botId} difficulty=${maxReadinessRun.difficulty} seed=${maxReadinessRun.seed} ending=${maxReadinessRun.endingId}; ${maxReadinessStatsReport}`,
+  `Max CR run: value=${maxReadinessRun.value} bot=${maxReadinessRun.botId} difficulty=${maxReadinessRun.difficulty} seed=${maxReadinessRun.seed} ending=${maxReadinessRun.endingId}; ${maxReadinessStatsReport}; electives=${maxReadinessRun.electiveChoices.join(",")}; breaks=${maxReadinessRun.breakChoices.map((choice) => `${choice.afterSemester}:${choice.trackId}`).join(",")}`,
 );
 console.log(
   `Coverage: events=${eventsSeen.size}/${EVENTS.length} (${((eventsSeen.size / EVENTS.length) * 100).toFixed(1)}%); dead=${deadEvents.length}; max ending=${(maxEndingShare * 100).toFixed(1)}%; max action=${(highestActionShare * 100).toFixed(1)}% (${highestActionLabel})`,
@@ -809,6 +1096,10 @@ if (!quick) {
     p1GateFailures.length === 0,
     `${p1GateFailures.join("; ")}; endings: ${endingReport}; CR by bot: ${readinessByBotReport}`,
   );
+  assert(
+    medianDecisions >= 250,
+    `G9 P2 interim requires median run length >=250 decisions, observed ${medianDecisions}`,
+  );
 }
 console.log(
   quick
@@ -817,6 +1108,10 @@ console.log(
 );
 console.log("G3 PASS: all bots terminate, guard <20000");
 console.log("G4 DEFERRED P9 | G5 DEFERRED P3 | G6 DEFERRED P7 | G7 DEFERRED P6");
-console.log("G8 DEFERRED P6 | G9 DEFERRED P2 | G10 PASS: byte-identical final states");
+console.log(
+  quick
+    ? "G8 DEFERRED P6 | G9 DIAGNOSTIC ONLY: full-sweep median assertion skipped | G10 PASS: byte-identical final states"
+    : `G8 DEFERRED P6 | G9 P2 PASS: median ${medianDecisions} >=250 | G10 PASS: byte-identical final states`,
+);
 console.log("G11 EXTERNAL: build + validator | G12 PASS: V1 migration + future refusal");
-console.log(quick ? "SMOKE P1 OK" : "BALANCE P1 OK");
+console.log(quick ? "SMOKE P2 OK" : "BALANCE P2 OK");

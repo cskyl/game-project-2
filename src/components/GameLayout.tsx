@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { SEMESTERS } from "../data/semesters";
+import { WEEKS_PER_SEMESTER } from "../game/constants";
 import { currentSemester } from "../game/selectors";
 import { useLang } from "../i18n";
 import type { GameState } from "../game/types";
@@ -32,10 +34,10 @@ export function GameLayout({
         </div>
         <div className="topbar-meta">
           <span className="pill">
-            {ui.semester} {state.semesterIndex + 1}/11
+            {ui.semester} {state.semesterIndex + 1}/{SEMESTERS.length}
           </span>
           <span className="pill">
-            {ui.week} {state.weekInSemester}/4
+            {ui.week} {state.weekInSemester}/{WEEKS_PER_SEMESTER}
           </span>
         </div>
         <div className="topbar-actions">

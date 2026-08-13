@@ -6,6 +6,8 @@ import { LangContext, tr, UI, withPartner } from "../src/i18n";
 import { StartScreen } from "../src/components/StartScreen";
 import { GameLayout } from "../src/components/GameLayout";
 import { PlanningScreen } from "../src/components/PlanningScreen";
+import { SemesterOpen } from "../src/components/SemesterOpen";
+import { BreakChapter } from "../src/components/BreakChapter";
 import { EventPanel } from "../src/components/EventPanel";
 import { WeeklySummary } from "../src/components/WeeklySummary";
 import { BossPanel } from "../src/components/BossPanel";
@@ -74,6 +76,33 @@ for (const lang of ["en", "zh"] as Lang[]) {
         onFinishWeek: noop,
       }),
     ),
+    semesterOpen: createElement(SemesterOpen, {
+      state: g,
+      onChoose: noop,
+      onBegin: noop,
+    }),
+    breakSelect: createElement(BreakChapter, {
+      state: {
+        ...g,
+        screen: "breakChapter",
+        semesterIndex: 1,
+        pendingBreakId: undefined,
+        breakTurn: 0,
+      },
+      onChooseTrack: noop,
+      onTakeAction: noop,
+    }),
+    breakAction: createElement(BreakChapter, {
+      state: {
+        ...g,
+        screen: "breakChapter",
+        semesterIndex: 1,
+        pendingBreakId: "rest_and_reset",
+        breakTurn: 1,
+      },
+      onChooseTrack: noop,
+      onTakeAction: noop,
+    }),
     event: createElement(EventPanel, {
       event: ev,
       state: g,
@@ -128,6 +157,27 @@ for (const lang of ["en", "zh"] as Lang[]) {
       assert(
         html.includes(V2_UI_TEXT.skillDriftHeading[lang]),
         `${lang}/summary omitted the explicit skill-drift section`,
+      );
+    }
+    if (name === "planning") {
+      assert(
+        html.includes("statbar-threshold") &&
+          html.includes(">20<") &&
+          html.includes(">70<"),
+        `${lang}/planning omitted the engine threshold ticks`,
+      );
+    }
+    if (name === "semesterOpen") {
+      assert(
+        html.includes(V2_UI_TEXT.electiveDraft[lang]) &&
+          html.includes(V2_UI_TEXT.standardTermTitle[lang]),
+        `${lang}/semesterOpen omitted the elective draft or honest modifier fallback`,
+      );
+    }
+    if (name === "breakSelect" || name === "breakAction") {
+      assert(
+        html.includes(V2_UI_TEXT.breakKicker[lang]),
+        `${lang}/${name} omitted localized break chrome`,
       );
     }
   }

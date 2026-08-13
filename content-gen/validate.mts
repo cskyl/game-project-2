@@ -6,6 +6,8 @@ import { ENDINGS } from "../src/data/endings";
 import { GENERATED_EVENTS } from "../src/data/events.generated";
 import { SEED_EVENTS } from "../src/data/events.seed";
 import { EVENTS } from "../src/data/events";
+import { BREAK_TRACKS } from "../src/data/breaks";
+import { ELECTIVES } from "../src/data/electives";
 import { SEMESTERS } from "../src/data/semesters";
 import { SYSTEM_FLAGS } from "../src/data/systemFlags";
 import { V2_UI_TEXT } from "../src/data/uiText";
@@ -17,6 +19,7 @@ import type {
   Stage,
   StatKey,
 } from "../src/game/types";
+import type { ModifierHook } from "../src/game/modifiers";
 
 export type ValidationIssue = { path: string; message: string };
 
@@ -163,6 +166,18 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
     ["achievements", ACHIEVEMENTS],
   ] as const;
 
+  if (SEMESTERS.length !== 12) {
+    issues.push({ path: "semesters", message: `expected 12 semesters, found ${SEMESTERS.length}` });
+  }
+  if (ELECTIVES.length !== 14) {
+    issues.push({ path: "electives", message: `expected frozen roster of 14, found ${ELECTIVES.length}` });
+  }
+  if (BREAK_TRACKS.length !== 5) {
+    issues.push({ path: "breakTracks", message: `expected frozen roster of 5, found ${BREAK_TRACKS.length}` });
+  }
+  issues.push(...duplicateIssues("electives", ELECTIVES));
+  issues.push(...duplicateIssues("breakTracks", BREAK_TRACKS));
+
   for (const [label, items] of registries) issues.push(...duplicateIssues(label, items));
   if (ENDINGS.length !== 24) {
     issues.push({ path: "endings", message: `expected frozen roster of 24, found ${ENDINGS.length}` });
@@ -190,6 +205,8 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
     ["actions", ACTIONS],
     ["bosses", BOSSES],
     ["achievements", ACHIEVEMENTS],
+    ["electives", ELECTIVES],
+    ["breakTracks", BREAK_TRACKS],
     ["semesters", SEMESTERS],
     ["v2UiText", V2_UI_TEXT],
   ];
@@ -272,6 +289,69 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
   for (const action of ACTIONS) issues.push(...validateCondition(action.unlock, `actions.${action.id}.unlock`));
   for (const ending of ENDINGS) issues.push(...validateCondition(ending.condition, `endings.${ending.id}.condition`));
 
+  const validHookOns = new Set([
+    "actionEffects", "apPerWeek", "softCapBand", "caseRoll", "bossRoll",
+    "simLabRoll", "projectQuality", "weeklyThreshold", "affinityGain",
+    "income", "expense",
+  ]);
+  const validateHooks = (hooks: readonly ModifierHook[], path: string): void => {
+    for (const hook of hooks) {
+      if (!validHookOns.has(hook.on)) {
+        issues.push({ path, message: `unknown modifier hook "${String(hook.on)}"` });
+      }
+      if (hook.on === "actionEffects" && hook.stat && !STATS.has(hook.stat)) {
+        issues.push({ path, message: `unknown action hook stat "${hook.stat}"` });
+      }
+      if (hook.on === "softCapBand" && !STATS.has(hook.stat)) {
+        issues.push({ path, message: `unknown soft-cap hook stat "${hook.stat}"` });
+      }
+      if ("add" in hook && !Number.isFinite(hook.add)) issues.push({ path, message: "hook add must be finite" });
+      if ("mult" in hook && (!Number.isFinite(hook.mult) || hook.mult <= 0)) issues.push({ path, message: "hook multiplier must be positive and finite" });
+    }
+  };
+  const hasCurrentActionEffect = (hooks: readonly ModifierHook[]): boolean => hooks.some((hook) => {
+    if (hook.on !== "actionEffects") return false;
+    return ACTIONS.some((action) => {
+      const tags = action.tags ?? [];
+      if (hook.tag && !tags.includes(hook.tag)) return false;
+      if (!hook.stat) return Object.values(action.effects).some((value) => (value ?? 0) > 0);
+      return (action.effects[hook.stat] ?? 0) > 0;
+    });
+  });
+  for (const elective of ELECTIVES) {
+    const path = `electives.${elective.id}`;
+    issues.push(...validateCondition(elective.prerequisites ?? elective.requirements, `${path}.requirements`));
+    const min = Math.max(elective.minSemester, elective.prerequisites?.minSemester ?? elective.requirements?.minSemester ?? 1);
+    const max = Math.min(elective.maxSemester, elective.prerequisites?.maxSemester ?? elective.requirements?.maxSemester ?? SEMESTERS.length);
+    if (!semestersReachable(elective.stage, min, max)) issues.push({ path, message: "unreachable stage/semester combination" });
+    validateHooks(elective.hooks, `${path}.hooks`);
+    if (!hasCurrentActionEffect(elective.hooks)) {
+      issues.push({ path: `${path}.hooks`, message: "must measurably affect at least one current action" });
+    }
+    if (elective.tags.length === 0) issues.push({ path: `${path}.tags`, message: "must have at least one tag" });
+  }
+  for (const track of BREAK_TRACKS) {
+    const path = `breakTracks.${track.id}`;
+    const requirements = track.requirements ?? track.eligibility;
+    issues.push(...validateCondition(requirements, `${path}.requirements`));
+    if (track.actions.length !== 3) issues.push({ path: `${path}.actions`, message: `expected exactly 3 actions, found ${track.actions.length}` });
+    issues.push(...duplicateIssues(`${path}.actions`, track.actions));
+    for (const breakAction of track.actions) {
+      issues.push(...validateLocalizedTexts(breakAction, `${path}.actions.${breakAction.id}`));
+      if (breakAction.tags.length === 0) issues.push({ path: `${path}.actions.${breakAction.id}.tags`, message: "must have at least one tag" });
+    }
+  }
+  for (let semesterId = 1; semesterId <= SEMESTERS.length; semesterId += 1) {
+    const stage = SEMESTERS[semesterId - 1].stage;
+    const eligible = ELECTIVES.filter((elective) =>
+      semesterId >= elective.minSemester && semesterId <= elective.maxSemester &&
+      (elective.stage.includes("any") || elective.stage.includes(stage)) &&
+      (!elective.prerequisites?.minSemester || semesterId >= elective.prerequisites.minSemester) &&
+      (!elective.prerequisites?.maxSemester || semesterId <= elective.prerequisites.maxSemester),
+    );
+    if (eligible.length < 3) issues.push({ path: `electives.semester${semesterId}`, message: `needs at least 3 eligible offers, found ${eligible.length}` });
+  }
+
   const bossesBySemester = new Map<number, number>();
   for (const boss of BOSSES) {
     bossesBySemester.set(boss.semesterId, (bossesBySemester.get(boss.semesterId) ?? 0) + 1);
@@ -308,7 +388,7 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
 const result = runValidation();
 console.log("Dental School Life Sim content validator");
 console.log(
-  `Inventory: events=${EVENTS.length}, cards=${CARDS.length}, endings=${ENDINGS.length}, actions=${ACTIONS.length}, bosses=${BOSSES.length}, achievements=${ACHIEVEMENTS.length}, semesters=${SEMESTERS.length}`,
+  `Inventory: events=${EVENTS.length}, cards=${CARDS.length}, endings=${ENDINGS.length}, actions=${ACTIONS.length}, bosses=${BOSSES.length}, achievements=${ACHIEVEMENTS.length}, semesters=${SEMESTERS.length}, electives=${ELECTIVES.length}, breakTracks=${BREAK_TRACKS.length}`,
 );
 console.log(`Checks: ${result.localizedCount} LocalizedText values; ids, stages, stats, rarities, conditions, reachability, flags, boss coverage`);
 for (const warning of result.warnings) console.warn(`WARNING: ${warning}`);

@@ -2,8 +2,9 @@
 
 A cozy, replayable, **bilingual (English / 中文)** browser game about getting through
 dental school. Balance study, lab practice, clinic, rest, mood, money, and
-relationships across **11 semesters × 4 weeks**, survive the semester checks, and
-reach one of many endings. No backend, no login — it runs as a static site and
+relationships across **12 semesters × 5 weeks**, choose electives and break
+tracks, survive the semester checks, and reach one of many endings. No backend,
+no login — it runs as a static site and
 deploys straight to GitHub Pages.
 
 > A fictionalized game inspired by dental school life. Not an official school
@@ -21,8 +22,12 @@ deploys straight to GitHub Pages.
 - 🃏 **Life cards** — draw 3 each week, play up to 2 for one-time bonuses.
 - 📈 **13 stats + 3 derived** (wellness, career readiness, life balance) with
   non-linear stress, mood, and stamina thresholds.
-- 🧑‍🏫 **11 semester checks** (the "bosses") scored from your build, not pass/fail.
-- 🏆 **8 endings** that reward your build — balance, empathy, hands, research,
+- 🎓 **Semester openings** — draft 1 of 3 seeded, eligible electives from a
+  14-option pool; the choice modifies the whole term.
+- 🌤️ **Break chapters** — after semesters 2, 5, and 8, choose one of five
+  three-turn tracks with distinct costs and payoffs.
+- 🧑‍🏫 **12 semester checks** (the "bosses") scored from your build, not pass/fail.
+- 🏆 **24 endings** that reward your build — balance, empathy, hands, research,
   community, being supported… or a gentle burnout warning.
 - 🌗 One-click **EN ⇄ 中文** toggle, everywhere.
 - 💾 Auto-save to `localStorage`, plus a copyable run summary.
@@ -41,6 +46,11 @@ Open the printed local URL (usually http://localhost:5173).
 
 ```bash
 npm run build      # type-check + production build into dist/
+npm run smoke      # fast seeded gameplay + exact-replay assertions
+npm run balance    # full 1,200-run balance sweep + 1,200 replays
+npm run validate-content
+npm run test:migration
+npm run test:render # render every screen in EN and 中文
 npm run preview    # serve the built dist/ locally
 ```
 
@@ -72,6 +82,8 @@ Everything lives in editable data files — no engine changes needed to add cont
 | Weekly actions | `src/data/actions.ts` |
 | Random events | `src/data/events.seed.ts` (hand-tuned) and `content-gen/*.json` → `src/data/events.generated.ts` |
 | Life cards | `src/data/cards.ts` / `src/data/cards.generated.ts` |
+| Electives and semester-long hooks | `src/data/electives.ts` |
+| Break tracks and actions | `src/data/breaks.ts` |
 | Semester checks (bosses) | `src/data/bosses.ts` |
 | Endings | `src/data/endings.ts` |
 | Semesters | `src/data/semesters.ts` |
@@ -98,12 +110,12 @@ node content-gen/merge.mjs   # validates, sanitizes, writes src/data/*.generated
 ### Engine smoke test (optional, for contributors)
 
 ```bash
-npx esbuild scripts/smoke.mts --bundle --platform=node --format=esm --outfile=scripts/smoke.bundle.mjs
-node scripts/smoke.bundle.mjs
+npm run smoke
 ```
 
-Auto-plays full games with several strategies and asserts the loop terminates at a
-valid ending with in-range stats.
+Auto-plays seeded full games with ten strategies and asserts that the loop
+terminates, P0–P2 balance gates hold, and exact input replay produces a
+byte-identical final state. `npm run balance` runs the authoritative sweep.
 
 ## Save system
 
@@ -117,10 +129,12 @@ Language preference and your achievement collection persist separately.
 src/
   App.tsx, main.tsx
   i18n/            bilingual UI strings, stat labels, language context
-  game/            types, constants, engine, balance, selectors, storage
-  data/            actions, events, bosses, endings, cards, semesters, personalization
+  game/            types, constants, engine, balance, selectors, storage, systems/
+  data/            actions, events, bosses, endings, cards, semesters, electives,
+                   breaks, personalization
   components/      StartScreen, GameLayout, StatsPanel, PlanningScreen,
-                   EventPanel, WeeklySummary, BossPanel, EndingScreen, …
+                   SemesterOpen, BreakChapter, EventPanel, WeeklySummary,
+                   BossPanel, EndingScreen, …
   styles/          variables.css, global.css
 ```
 

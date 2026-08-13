@@ -91,7 +91,7 @@ const en = {
   // Start screen
   tagline: "Balance study, clinic, sleep, mood, and the tiny chaos of dental school.",
   startDescription:
-    "A cozy, replayable dental school life sim. Four years, eleven semesters, dozens of tiny decisions, and many possible endings.",
+    "A cozy, replayable dental school life sim. Four years, twelve semesters, dozens of tiny decisions, and many possible endings.",
   newGame: "Start New Game",
   continueGame: "Continue",
   difficulty: "Difficulty",
@@ -107,7 +107,7 @@ const en = {
   // Header
   semester: "Semester",
   week: "Week",
-  weekOf: "Week {n} of 4",
+  weekOf: "Week {n} of 5",
   menu: "Menu",
   save: "Save",
   saved: "Saved!",
@@ -187,7 +187,7 @@ const zh: typeof en = {
   langButton: "EN",
   tagline: "在学习、临床、睡眠、心情和牙学院的种种小混乱之间找平衡。",
   startDescription:
-    "一个温暖、可反复游玩的牙学院生活模拟器。四年、十一个学期、几十个小选择，以及很多种不同的结局。",
+    "一个温暖、可反复游玩的牙学院生活模拟器。四年、十二个学期、几十个小选择，以及很多种不同的结局。",
   newGame: "开始新游戏",
   continueGame: "继续游戏",
   difficulty: "难度",
@@ -202,7 +202,7 @@ const zh: typeof en = {
   savedGameFound: "发现存档",
   semester: "学期",
   week: "第几周",
-  weekOf: "第 {n} 周 / 共 4 周",
+  weekOf: "第 {n} 周 / 共 5 周",
   menu: "菜单",
   save: "保存",
   saved: "已保存！",
