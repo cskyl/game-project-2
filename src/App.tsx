@@ -17,8 +17,12 @@ import {
   beginSemester,
   chooseAction,
   chooseBreakTrack,
+  chooseCaseOption,
   chooseElective,
+  chooseSimLabApproach,
   closeResearchDashboard,
+  continueAfterCase,
+  continueAfterSimLab,
   continueAfterEvent,
   continueAfterWeeklySummary,
   finishWeek,
@@ -35,6 +39,8 @@ import {
   startResearchProject,
   takeBreakAction,
 } from "./game/engine";
+import { CaseScreen } from "./components/CaseScreen";
+import { SimLabScreen } from "./components/SimLabScreen";
 import { getEnding, getPendingEvent } from "./game/selectors";
 import {
   clearSave,
@@ -204,6 +210,22 @@ export default function App() {
           ) : (
             <WeeklySummary state={game} onContinue={() => apply(continueAfterWeeklySummary)} />
           ))}
+
+        {game.screen === "case" && (
+          <CaseScreen
+            state={game}
+            onChoose={(id) => apply((s) => chooseCaseOption(s, id))}
+            onContinue={() => apply(continueAfterCase)}
+          />
+        )}
+
+        {game.screen === "simLab" && (
+          <SimLabScreen
+            state={game}
+            onChoose={(approach) => apply((s) => chooseSimLabApproach(s, approach))}
+            onContinue={() => apply(continueAfterSimLab)}
+          />
+        )}
 
         {game.screen === "weeklySummary" && (
           <WeeklySummary state={game} onContinue={() => apply(continueAfterWeeklySummary)} />

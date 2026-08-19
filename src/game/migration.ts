@@ -53,9 +53,12 @@ export type V1GameState = Omit<
   | "breakChoices"
   | "matchApplications"
   | "weekGains"
+  | "weekActionTags"
   | "softCapCarry"
   | "pendingCaseId"
+  | "caseProgress"
   | "pendingSimLabId"
+  | "simLabProgress"
   | "pendingBreakId"
   | "breakTurn"
   // Omitted so the narrowed V2-free shapes below actually replace them. Without
@@ -90,6 +93,8 @@ const SCREENS = new Set<GameState["screen"]>([
   "planning",
   "event",
   "researchDashboard",
+  "case",
+  "simLab",
   "weeklySummary",
   "boss",
   "breakChapter",
@@ -103,6 +108,8 @@ const LOG_KINDS = new Set([
   "boss",
   "system",
   "drift",
+  "case",
+  "simLab",
 ]);
 const PROJECT_PHASES = new Set([
   "idea",
@@ -352,6 +359,42 @@ function isBreakTurn(value: unknown): value is number {
   return isNonNegativeInteger(value) && value <= 3;
 }
 
+const SIM_LAB_APPROACHES = new Set(["fast", "careful", "textbook"]);
+const SIM_LAB_STAGE_OUTCOMES = new Set(["over", "ideal", "under"]);
+
+/** An in-progress case is resumable state, so its shape is checked like any other. */
+function isCaseProgress(value: unknown): value is GameState["caseProgress"] {
+  if (value === undefined) return true;
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.caseId === "string" &&
+    isNonNegativeInteger(value.stepIndex) &&
+    isFiniteNumber(value.score) &&
+    isStringArray(value.choices) &&
+    (value.outcome === undefined ||
+      (typeof value.outcome === "string" && CASE_OUTCOMES.has(value.outcome))) &&
+    (value.roll === undefined || isRecord(value.roll))
+  );
+}
+
+function isSimLabProgress(value: unknown): value is GameState["simLabProgress"] {
+  if (value === undefined) return true;
+  if (!isRecord(value)) return false;
+  const everyIn = (entry: unknown, allowed: Set<string>): boolean =>
+    Array.isArray(entry) &&
+    entry.every((item) => typeof item === "string" && allowed.has(item));
+  return (
+    typeof value.exerciseId === "string" &&
+    isNonNegativeInteger(value.stageIndex) &&
+    everyIn(value.approaches, SIM_LAB_APPROACHES) &&
+    everyIn(value.results, SIM_LAB_STAGE_OUTCOMES) &&
+    Array.isArray(value.errors) &&
+    value.errors.every(isFiniteNumber) &&
+    (value.result === undefined ||
+      (typeof value.result === "string" && SIM_LAB_RESULTS.has(value.result)))
+  );
+}
+
 /** Soft-cap remainders are banked fractions; anything outside [0, 1) is corrupt. */
 function isSoftCapCarry(value: unknown): value is StatBlock {
   return (
@@ -434,6 +477,7 @@ function isV2State(value: unknown): value is GameState {
     Array.isArray(value.matchApplications) &&
     value.matchApplications.every(isMatchApplication) &&
     isStatBlock(value.weekGains) &&
+    isStringArray(value.weekActionTags) &&
     isSoftCapCarry(value.softCapCarry) &&
     isCompleteStats(value.weekStartStats) &&
     isStringArray(value.flags) &&
@@ -452,7 +496,9 @@ function isV2State(value: unknown): value is GameState {
     isOptionalString(value.pendingChoiceId) &&
     isOptionalString(value.pendingBossId) &&
     isOptionalString(value.pendingCaseId) &&
+    isCaseProgress(value.caseProgress) &&
     isOptionalString(value.pendingSimLabId) &&
+    isSimLabProgress(value.simLabProgress) &&
     isOptionalString(value.pendingBreakId) &&
     isBreakTurn(value.breakTurn) &&
     (value.lastBossResult === undefined || isBossResult(value.lastBossResult)) &&
@@ -558,6 +604,8 @@ function migrateV1(value: UnknownRecord): SaveLoadResult {
     },
     caseLog: [],
     simLabLog: [],
+    caseProgress: undefined,
+    simLabProgress: undefined,
     perks: [],
     perkPoints: 0,
     equipment: [],
@@ -572,6 +620,7 @@ function migrateV1(value: UnknownRecord): SaveLoadResult {
     breakChoices: [],
     matchApplications: [],
     weekGains: {},
+    weekActionTags: [],
     softCapCarry: {},
     weekStartStats,
     flags: stringsFrom(value.flags),
@@ -633,6 +682,13 @@ export function migrateSave(value: unknown): SaveLoadResult {
     // which is exactly an empty ledger — a zero default, not a guess.
     if (hydrated.softCapCarry === undefined) {
       hydrated.softCapCarry = {};
+      hydratedDefaults = true;
+    }
+    // P0-P3 saves predate the weekly mini-games. An absent value means "no
+    // clinic action bought yet" and "no case or practical in progress", which
+    // are exact zero defaults rather than guesses.
+    if (hydrated.weekActionTags === undefined) {
+      hydrated.weekActionTags = [];
       hydratedDefaults = true;
     }
     // P0-P2 V2 saves have the research skeleton but predate P3's dashboard,

@@ -52,6 +52,8 @@ export type Screen =
   | "planning"
   | "event"
   | "researchDashboard"
+  | "case"
+  | "simLab"
   | "weeklySummary"
   | "boss"
   | "breakChapter"
@@ -198,7 +200,7 @@ export type LogEntry = {
   weekInSemester: number;
   text: LocalizedText;
   effects?: StatBlock;
-  kind: "action" | "card" | "event" | "boss" | "system" | "drift";
+  kind: "action" | "card" | "event" | "boss" | "system" | "drift" | "case" | "simLab";
 };
 
 export type Achievement = {
@@ -330,12 +332,114 @@ export type CaseLogEntry = {
   tags: string[];
 };
 
+// ---------------------------------------------------------------------------
+// Patient cases (§5.2). Three decisions, then one execution roll. Wrong answers
+// are positions a real student could hold, never strawmen, and the feedback is
+// where the case teaches.
+// ---------------------------------------------------------------------------
+
+export type CaseOptionQuality = "best" | "ok" | "poor";
+
+export type CaseOption = {
+  id: string;
+  text: LocalizedText;
+  quality: CaseOptionQuality;
+  /** Gated options render locked, with the requirement shown. */
+  requires?: EventCondition;
+  feedback: LocalizedText;
+  effects?: StatBlock;
+};
+
+export type CaseStepKind = "history" | "diagnosis" | "plan";
+
+export type CaseStep = {
+  id: string;
+  kind: CaseStepKind;
+  prompt: LocalizedText;
+  options: CaseOption[];
+};
+
+export type PatientCase = {
+  id: string;
+  patient: { name: LocalizedText; age: number; chiefComplaint: LocalizedText };
+  stage: Array<Stage | "any">;
+  minSemester?: number;
+  /** 0–20, subtracted from the execution roll. */
+  difficulty: number;
+  steps: CaseStep[];
+  execution: Array<{ stat: ConditionStatKey; weight: number }>;
+  outcomes: Record<CaseOutcome, { text: LocalizedText; effects: StatBlock }>;
+  tags: string[];
+};
+
+/** Every term of the execution roll, so the UI can show the real arithmetic. */
+export type CaseRoll = {
+  weighted: number;
+  stepBonus: number;
+  difficulty: number;
+  modifier: number;
+  roll: number;
+  total: number;
+};
+
+export type CaseProgress = {
+  caseId: string;
+  /** 0-based index into the case's steps; equals steps.length once resolved. */
+  stepIndex: number;
+  /** Accumulated step score: best +2, ok +1, poor −1. */
+  score: number;
+  /** Chosen option id per resolved step, for the recap. */
+  choices: string[];
+  outcome?: CaseOutcome;
+  roll?: CaseRoll;
+};
+
+// ---------------------------------------------------------------------------
+// Sim-lab practicals (§5.3). The preclinical counterpart to patient cases:
+// a three-stage precision exercise scored on signed error, so rushing
+// over-prepares and timidity under-prepares.
+// ---------------------------------------------------------------------------
+
 export type SimLabResult = "commendation" | "pass" | "rough";
 
 export type SimLabLogEntry = {
   exerciseId: string;
   result: SimLabResult;
   idealStages: number;
+};
+
+export type SimLabApproach = "fast" | "careful" | "textbook";
+
+export type SimLabStageOutcome = "over" | "ideal" | "under";
+
+export type SimLabStage = {
+  id: string;
+  prompt: LocalizedText;
+  /** Added to the signed error; a fussier stage is easier to get wrong. */
+  demand: number;
+  feedback: Record<SimLabStageOutcome, LocalizedText>;
+};
+
+export type SimLabExercise = {
+  id: string;
+  title: LocalizedText;
+  description: LocalizedText;
+  stage: Array<Stage | "any">;
+  minSemester?: number;
+  maxSemester?: number;
+  difficulty: number;
+  stages: SimLabStage[];
+  outcomes: Record<SimLabResult, { text: LocalizedText; effects: StatBlock }>;
+};
+
+export type SimLabProgress = {
+  exerciseId: string;
+  stageIndex: number;
+  approaches: SimLabApproach[];
+  results: SimLabStageOutcome[];
+  /** Signed error per resolved stage, kept so the UI can explain the call. */
+  errors: number[];
+  result?: SimLabResult;
 };
 
 export type BreakChoice = {
@@ -392,6 +496,8 @@ export type GameState = {
   breakChoices: BreakChoice[];
   matchApplications: MatchApplication[];
   weekGains: StatBlock;
+  /** Tags of the actions bought this week; drives the guaranteed clinic case. */
+  weekActionTags: string[];
   /**
    * Fractional soft-cap remainder per stat, always in [0, 1). Diminished gains
    * accumulate here so a band multiplier is applied exactly over repeated
@@ -416,7 +522,9 @@ export type GameState = {
   pendingChoiceId?: string;
   pendingBossId?: string;
   pendingCaseId: string | undefined;
+  caseProgress: CaseProgress | undefined;
   pendingSimLabId: string | undefined;
+  simLabProgress: SimLabProgress | undefined;
   pendingBreakId: string | undefined;
   /** 0..3 actions taken in the currently selected break chapter. */
   breakTurn: number;

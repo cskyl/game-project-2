@@ -14,7 +14,11 @@ import { WeeklySummary } from "../src/components/WeeklySummary";
 import { BossPanel } from "../src/components/BossPanel";
 import { EndingScreen } from "../src/components/EndingScreen";
 import { ConfirmDialog } from "../src/components/ConfirmDialog";
+import { CaseScreen } from "../src/components/CaseScreen";
+import { SimLabScreen } from "../src/components/SimLabScreen";
 import { BOSSES } from "../src/data/bosses";
+import { CASES } from "../src/data/cases";
+import { SIM_LAB_EXERCISES } from "../src/data/simlab";
 import { EVENTS } from "../src/data/events";
 import { V2_UI_TEXT } from "../src/data/uiText";
 import { newGame } from "../src/game/engine";
@@ -229,6 +233,70 @@ for (const lang of ["en", "zh"] as Lang[]) {
       onResubmitProject: noop,
       onAbandonProject: noop,
       onReturn: noop,
+    }),
+    caseStep: createElement(CaseScreen, {
+      state: {
+        ...g,
+        screen: "case" as const,
+        semesterIndex: 7,
+        pendingCaseId: CASES[0].id,
+        caseProgress: { caseId: CASES[0].id, stepIndex: 1, score: 2, choices: [CASES[0].steps[0].options[0].id] },
+      },
+      onChoose: noop,
+      onContinue: noop,
+    }),
+    caseResolved: createElement(CaseScreen, {
+      state: {
+        ...g,
+        screen: "case" as const,
+        semesterIndex: 7,
+        pendingCaseId: CASES[0].id,
+        caseProgress: {
+          caseId: CASES[0].id,
+          stepIndex: 3,
+          score: 5,
+          choices: CASES[0].steps.map((step) => step.options[0].id),
+          outcome: "excellent" as const,
+          roll: { weighted: 62.5, stepBonus: 25, difficulty: 6, modifier: 0, roll: 3, total: 85 },
+        },
+      },
+      onChoose: noop,
+      onContinue: noop,
+    }),
+    simLabStep: createElement(SimLabScreen, {
+      state: {
+        ...g,
+        screen: "simLab" as const,
+        semesterIndex: 3,
+        pendingSimLabId: SIM_LAB_EXERCISES[0].id,
+        simLabProgress: {
+          exerciseId: SIM_LAB_EXERCISES[0].id,
+          stageIndex: 1,
+          approaches: ["careful" as const],
+          results: ["ideal" as const],
+          errors: [1.2],
+        },
+      },
+      onChoose: noop,
+      onContinue: noop,
+    }),
+    simLabResolved: createElement(SimLabScreen, {
+      state: {
+        ...g,
+        screen: "simLab" as const,
+        semesterIndex: 3,
+        pendingSimLabId: SIM_LAB_EXERCISES[0].id,
+        simLabProgress: {
+          exerciseId: SIM_LAB_EXERCISES[0].id,
+          stageIndex: 3,
+          approaches: ["careful" as const, "fast" as const, "textbook" as const],
+          results: ["ideal" as const, "over" as const, "under" as const],
+          errors: [1.2, 6.4, -5.1],
+          result: "rough" as const,
+        },
+      },
+      onChoose: noop,
+      onContinue: noop,
     }),
     semesterOpen: createElement(SemesterOpen, {
       state: g,

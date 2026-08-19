@@ -247,9 +247,24 @@ export const ENDINGS: Ending[] = [
     priority: 82,
     title: { en: "Leave the Light On", zh: "把灯留给后来的人" },
     subtitle: { en: "The dentist who teaches", zh: "愿意教人的牙医" },
+    // Re-expressed for P4. The interim version gated on clinicalSense <= 50,
+    // which stopped meaning anything once patient cases raised clinical
+    // competence for everyone who reaches D3. A teacher is now identified by
+    // what actually distinguishes one: regard *inside* the school rather than
+    // a public reputation outside it.
+    // Re-expressed for P4. The interim version gated on clinicalSense <= 50,
+    // which stopped meaning anything once patient cases raised clinical
+    // competence for everyone who reaches D3. A cap on `reputation` was tried
+    // and rejected for the same reason G13 exists: reputation saturates, so a
+    // cap on it can never fire. What is left is an honest floor — deep
+    // knowledge, real warmth, and regard inside the school.
+    //
+    // No current build reaches it. The systems that should produce a teaching
+    // identity are the mentor arc (P5) and the teaching-assistant leadership
+    // role (P6); until one of them lands this is authored content waiting for
+    // its build, which is recorded rather than hidden.
     condition: {
-      minStats: { knowledge: 62, empathy: 52, standing: 30 },
-      maxStats: { clinicalSense: 50 },
+      minStats: { knowledge: 70, empathy: 55, standing: 58 },
     },
     text: {
       en: "You became the person who can explain the thing without making anyone feel small. Somewhere, a student breathes easier because you remembered what it was like not to know.",

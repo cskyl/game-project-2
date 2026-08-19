@@ -1704,3 +1704,121 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Patient cases and sim-lab practicals (P4) ---------------------------- */
+
+.case-patient { margin-bottom: 0.75rem; }
+.case-complaint {
+  font-style: italic;
+  color: var(--text-soft);
+  margin: 0.25rem 0 0;
+}
+
+.case-steps,
+.simlab-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+}
+.case-steps li,
+.simlab-stages li {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+}
+.case-steps li.active,
+.simlab-stages li.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.case-steps li.done,
+.simlab-stages li.done { opacity: 0.75; }
+.simlab-stages li.ideal { border-color: var(--good); color: var(--good); }
+.simlab-stages li.over,
+.simlab-stages li.under { border-color: var(--warning); color: var(--warning); }
+
+.case-recap-row,
+.simlab-recap-row {
+  border-left: 3px solid var(--border);
+  padding: 0.3rem 0 0.3rem 0.7rem;
+  margin-bottom: 0.6rem;
+}
+.case-recap-row.quality-best { border-left-color: var(--good); }
+.case-recap-row.quality-poor { border-left-color: var(--warning); }
+.simlab-recap-row.ideal { border-left-color: var(--good); }
+.simlab-recap-row.over,
+.simlab-recap-row.under { border-left-color: var(--warning); }
+
+.case-recap-kind,
+.simlab-recap-kind {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-soft);
+}
+.case-recap-choice { margin: 0.1rem 0; font-weight: 500; }
+.case-feedback,
+.simlab-feedback {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-soft);
+}
+
+.case-prompt,
+.simlab-prompt { font-weight: 500; margin-bottom: 0.6rem; }
+
+.case-options,
+.simlab-options { display: grid; gap: 0.5rem; }
+.simlab-options { grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); }
+
+.case-option,
+.simlab-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: left;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.case-option:hover:not(:disabled),
+.simlab-option:hover { border-color: var(--accent); transform: translateY(-1px); }
+.case-option:disabled { opacity: 0.55; cursor: not-allowed; }
+.case-option-lock,
+.simlab-option-hint {
+  font-size: 0.76rem;
+  color: var(--text-soft);
+}
+.simlab-option-title { font-weight: 600; }
+
+.case-outcome,
+.simlab-outcome { margin-top: 1rem; }
+.case-outcome h3,
+.simlab-outcome h3 { margin-bottom: 0.4rem; }
+.outcome-excellent h3,
+.outcome-commendation h3 { color: var(--good); }
+.outcome-bad h3,
+.outcome-rough h3 { color: var(--warning); }
+
+.roll-breakdown { margin: 0.6rem 0; font-size: 0.85rem; }
+.roll-breakdown summary { cursor: pointer; color: var(--text-soft); }
+.roll-breakdown ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+.roll-breakdown .roll-total { font-weight: 600; margin-top: 0.25rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .case-option,
+  .simlab-option { transition: none; }
+  .case-option:hover:not(:disabled),
+  .simlab-option:hover { transform: none; }
+}

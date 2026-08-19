@@ -2,7 +2,13 @@ import { CARDS_BY_ID } from "../../data/cards";
 import { EVENTS_BY_ID } from "../../data/events";
 import { SEMESTERS } from "../../data/semesters";
 import { computeThresholds, evaluateCondition } from "../balance";
-import { MAX_CARDS_PLAYED_PER_WEEK, WEEKS_PER_SEMESTER } from "../constants";
+import {
+  CASE_CHANCE,
+  CLINIC_ACTION_TAG,
+  MAX_CARDS_PLAYED_PER_WEEK,
+  SIM_LAB_CHANCE,
+  WEEKS_PER_SEMESTER,
+} from "../constants";
 import { applyWeeklyThresholdHooks, collectHooks } from "../modifiers";
 import { chance } from "../rng";
 import { checkAchievements } from "./achievements";
@@ -12,6 +18,8 @@ import { drawWeeklyCards } from "./deck";
 import { selectCrisisEvent, selectWeeklyEvent } from "./events";
 import { actionPointBreakdown, skillDriftEffects } from "./progression";
 import { tickResearch } from "./research";
+import { openCase, selectPatientCase } from "./cases";
+import { openSimLab, selectSimLabExercise } from "./simlab";
 import { applyEffects, transitionState } from "./state";
 import type { GameState, LocalizedText } from "../types";
 
@@ -49,6 +57,7 @@ export function startWeek(
       collectHooks(randomState),
     ).total,
     weekGains: {},
+    weekActionTags: [],
     weekStartStats: { ...randomState.stats },
     weeklyCards: cards,
     cardsPlayedThisWeek: 0,
@@ -131,6 +140,33 @@ export function finishWeek(state: GameState): GameState {
     weekWarnings: thr.warnings,
   });
   next = checkAchievements(next);
+
+  // §3.2 step 4.6: at most one mini-game per week, and it replaces the week's
+  // random event so the clinic never competes with life for the same slot.
+  // Spending action points on clinic work guarantees a patient that week.
+  const stage = currentSemester(next).stage;
+  if (stage === "clinical" || stage === "advanced") {
+    const guaranteed = next.weekActionTags.includes(CLINIC_ACTION_TAG);
+    let fires = guaranteed;
+    if (!fires) {
+      const [rolled, randomState] = chance(next, CASE_CHANCE);
+      next = randomState;
+      fires = rolled;
+    }
+    if (fires) {
+      const [caseId, drawnState] = selectPatientCase(next);
+      next = drawnState;
+      if (caseId) return openCase(next, caseId);
+    }
+  } else if (stage === "preclinical" || stage === "transition") {
+    const [rolled, randomState] = chance(next, SIM_LAB_CHANCE);
+    next = randomState;
+    if (rolled) {
+      const [exerciseId, drawnState] = selectSimLabExercise(next);
+      next = drawnState;
+      if (exerciseId) return openSimLab(next, exerciseId);
+    }
+  }
 
   // Choose this week's event.
   let eventId: string | undefined;

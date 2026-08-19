@@ -16,6 +16,20 @@ export const MAX_CARDS_PLAYED_PER_WEEK = 2;
 /** How many weeks must pass before a non-crisis event can repeat. */
 export const EVENT_RECENCY_WINDOW = 5;
 
+// --- Weekly mini-games (§5.2, §5.3) ----------------------------------------
+// At most one fires per week and it replaces that week's random event, so the
+// clinic never competes with life for the same slot.
+
+/** Chance a patient case walks in during a clinical week. */
+export const CASE_CHANCE = 0.55;
+/** Chance a sim-lab practical is scheduled during a preclinical week. */
+export const SIM_LAB_CHANCE = 0.5;
+/** Spending action points on clinic work guarantees a case that week. */
+export const CLINIC_ACTION_TAG = "clinic";
+/** How many recent cases/exercises are excluded from the next draw. */
+export const CASE_RECENCY_WINDOW = 6;
+export const SIM_LAB_RECENCY_WINDOW = 4;
+
 export const STAT_MIN = 0;
 export const STAT_MAX = 100;
 export const MONEY_MIN = -50;

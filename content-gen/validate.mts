@@ -7,7 +7,9 @@ import { GENERATED_EVENTS } from "../src/data/events.generated";
 import { SEED_EVENTS } from "../src/data/events.seed";
 import { EVENTS } from "../src/data/events";
 import { BREAK_TRACKS } from "../src/data/breaks";
+import { CASES } from "../src/data/cases";
 import { ELECTIVES } from "../src/data/electives";
+import { SIM_LAB_EXERCISES } from "../src/data/simlab";
 import {
   RESEARCH_EVENTS,
   RESEARCH_LABS,
@@ -217,6 +219,75 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
   if (ELECTIVES.length !== 14) {
     issues.push({ path: "electives", message: `expected frozen roster of 14, found ${ELECTIVES.length}` });
   }
+  // Patient cases and sim-lab practicals: shape, reachability, and the one
+  // invariant that would silently break a run — a step whose every option is
+  // gated, which would soft-lock the case for a player who cannot meet any of
+  // them.
+  issues.push(...duplicateIssues("cases", CASES));
+  issues.push(...duplicateIssues("simLab", SIM_LAB_EXERCISES));
+  for (const entry of CASES) {
+    const path = `cases.${entry.id}`;
+    for (const stage of entry.stage) {
+      if (!STAGES.has(stage)) issues.push({ path, message: `unknown stage "${stage}"` });
+    }
+    if (!semestersReachable(entry.stage, entry.minSemester ?? 1, SEMESTERS.length)) {
+      issues.push({ path, message: "no semester matches this case's stage and minSemester" });
+    }
+    if (entry.steps.length !== 3) {
+      issues.push({ path, message: `expected 3 steps (history, diagnosis, plan), found ${entry.steps.length}` });
+    }
+    const kinds = entry.steps.map((step) => step.kind).join(",");
+    if (kinds !== "history,diagnosis,plan") {
+      issues.push({ path, message: `steps must run history,diagnosis,plan — found ${kinds}` });
+    }
+    const weightSum = entry.execution.reduce((sum, term) => sum + term.weight, 0);
+    if (Math.abs(weightSum - 1) > 1e-6) {
+      issues.push({ path: `${path}.execution`, message: `weights must sum to 1, found ${weightSum}` });
+    }
+    for (const term of entry.execution) {
+      if (!CONDITION_STATS.has(term.stat)) {
+        issues.push({ path: `${path}.execution`, message: `unknown stat "${term.stat}"` });
+      }
+    }
+    for (const step of entry.steps) {
+      issues.push(...duplicateIssues(`${path}.${step.id}`, step.options));
+      if (step.options.length < 2) {
+        issues.push({ path: `${path}.${step.id}`, message: "a decision needs at least two options" });
+      }
+      if (!step.options.some((option) => option.requires === undefined)) {
+        issues.push({
+          path: `${path}.${step.id}`,
+          message: "every option is gated — this step can soft-lock the case",
+        });
+      }
+      if (!step.options.some((option) => option.quality === "best")) {
+        issues.push({ path: `${path}.${step.id}`, message: "no option is marked best" });
+      }
+      for (const option of step.options) {
+        issues.push(...validateCondition(option.requires, `${path}.${step.id}.${option.id}`));
+      }
+    }
+  }
+  for (const entry of SIM_LAB_EXERCISES) {
+    const path = `simLab.${entry.id}`;
+    for (const stage of entry.stage) {
+      if (!STAGES.has(stage)) issues.push({ path, message: `unknown stage "${stage}"` });
+    }
+    if (!semestersReachable(entry.stage, entry.minSemester ?? 1, entry.maxSemester ?? SEMESTERS.length)) {
+      issues.push({ path, message: "no semester matches this exercise's stage and semester bounds" });
+    }
+    if (entry.stages.length !== 3) {
+      issues.push({ path, message: `expected 3 stages, found ${entry.stages.length}` });
+    }
+    for (const stage of entry.stages) {
+      for (const outcome of ["over", "ideal", "under"] as const) {
+        if (!isNonEmptyString(stage.feedback[outcome]?.en)) {
+          issues.push({ path: `${path}.${stage.id}`, message: `missing ${outcome} feedback` });
+        }
+      }
+    }
+  }
+
   if (BREAK_TRACKS.length !== 5) {
     issues.push({ path: "breakTracks", message: `expected frozen roster of 5, found ${BREAK_TRACKS.length}` });
   }
@@ -263,6 +334,8 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
     ["bosses", BOSSES],
     ["achievements", ACHIEVEMENTS],
     ["electives", ELECTIVES],
+    ["cases", CASES],
+    ["simLab", SIM_LAB_EXERCISES],
     ["breakTracks", BREAK_TRACKS],
     ["researchLabs", RESEARCH_LABS],
     ["researchProjects", RESEARCH_PROJECT_TEMPLATES],
@@ -642,7 +715,7 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
 const result = runValidation();
 console.log("Dental School Life Sim content validator");
 console.log(
-  `Inventory: events=${EVENTS.length}, cards=${CARDS.length}, endings=${ENDINGS.length}, actions=${ACTIONS.length}, bosses=${BOSSES.length}, achievements=${ACHIEVEMENTS.length}, semesters=${SEMESTERS.length}, electives=${ELECTIVES.length}, breakTracks=${BREAK_TRACKS.length}, researchLabs=${RESEARCH_LABS.length}, researchProjects=${RESEARCH_PROJECT_TEMPLATES.length}, researchEvents=${RESEARCH_EVENTS.length}`,
+  `Inventory: events=${EVENTS.length}, cards=${CARDS.length}, endings=${ENDINGS.length}, actions=${ACTIONS.length}, bosses=${BOSSES.length}, achievements=${ACHIEVEMENTS.length}, semesters=${SEMESTERS.length}, electives=${ELECTIVES.length}, breakTracks=${BREAK_TRACKS.length}, researchLabs=${RESEARCH_LABS.length}, researchProjects=${RESEARCH_PROJECT_TEMPLATES.length}, researchEvents=${RESEARCH_EVENTS.length}, cases=${CASES.length}, simLab=${SIM_LAB_EXERCISES.length}`,
 );
 console.log(`Checks: ${result.localizedCount} LocalizedText values; ids, stages, stats, rarities, conditions, reachability, flags, boss coverage, research producers and phase completeness`);
 for (const warning of result.warnings) console.warn(`WARNING: ${warning}`);

@@ -46,6 +46,14 @@ export {
   resolveEventChoice,
 } from "./systems/week";
 export {
+  chooseCaseOptionState as chooseCaseOption,
+  continueAfterCaseState as continueAfterCase,
+} from "./systems/cases";
+export {
+  chooseSimLabApproachState as chooseSimLabApproach,
+  continueAfterSimLabState as continueAfterSimLab,
+} from "./systems/simlab";
+export {
   advanceAfterBoss,
   bossBreakdown,
   bossReadiness,
@@ -159,9 +167,12 @@ export function newGame(
     breakChoices: [],
     matchApplications: [],
     weekGains: {},
+    weekActionTags: [],
     softCapCarry: {},
     pendingCaseId: undefined,
+    caseProgress: undefined,
     pendingSimLabId: undefined,
+    simLabProgress: undefined,
     pendingBreakId: undefined,
     breakTurn: 0,
     weekStartStats: { ...INITIAL_STATS },
@@ -234,6 +245,9 @@ export function chooseAction(state: GameState, actionId: string): GameState {
   next = applyResearchActionState(next, action.id);
   next = transitionState(next, {
     actionPointsRemaining: next.actionPointsRemaining - action.cost,
+    weekActionTags: Array.from(
+      new Set([...next.weekActionTags, ...(action.tags ?? [])]),
+    ),
   });
   return checkAchievements(next);
 }

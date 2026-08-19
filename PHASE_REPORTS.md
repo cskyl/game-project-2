@@ -199,3 +199,57 @@ were measured locally by the reviewing agent, not carried over from P3.
   vacuous (no run can reach three papers under the two-poster/publication
   ledger cap) and its `clinicalRecord` input is still the three-stat average
   rather than the case log — both belong to P4, which introduces the case log.
+
+## P4 — the clinical loop
+
+**Status:** green on `v2/p4-clinical`. Clinic is a decision now, not a stat button.
+
+- **Landed:** patient cases (§5.2) and sim-lab practicals (§5.3) end to end —
+  types, systems, week wiring, two bilingual screens, validator coverage, bot
+  support and a new gate. At most one mini-game fires per week and it replaces
+  that week's random event, so the clinic never competes with life for the slot.
+  Spending action points on clinic work guarantees a patient (`weekActionTags`).
+- **Cases:** 8 authored, three decisions each (history → diagnosis → plan), then
+  one execution roll whose every term is shown in the UI. Wrong options are
+  positions a student could defend, best answers are not always listed first,
+  and one case (`case_cost_barrier`) has no clean best answer — only an honest
+  one. Gated options render locked with the requirement visible.
+- **Sim lab:** 6 exercises, three stages each, graded on **signed** error so
+  rushing over-prepares and timidity under-prepares. Skill *narrows* the band
+  rather than pushing a direction — control is what is being tested. Three ideal
+  stages earn a commendation and a perk point. A first pass keyed the error off
+  `demand` and `difficulty` directly, which biased every student toward
+  over-preparation; that was rebuilt before it shipped.
+- **G15 added and passing:** 25,264 cases over 1,200 runs (median 19/run),
+  coverage 8/8, outcomes good 42.5% / excellent 36.1% / rough 18.1% / bad 3.3%;
+  11,953 practicals (median 10/run), coverage 6/6, pass 41.7% / rough 38.1% /
+  commendation 20.2%. The gate fails on an unreachable case, a mini-game that
+  never fires, or a degenerate outcome distribution (>85% one outcome).
+- **Two problems the new system fixed as a side effect.** `standing` was inert
+  before P4 (33.0 ± 2.5 across 1,200 runs — a constant wearing a progress bar);
+  cases and practicals now drive it to 57.6. `confidence` saturation fell from
+  98.5 mean / 76% pinned to 91.4 / 43%, because a rough case costs confidence.
+  It remains recorded G13 debt.
+- **One problem it caused, and the honest disposition.** Cases raise clinical
+  competence for everyone who reaches D3, which destroyed the build the
+  `teacher` ending was written against (`clinicalSense <= 50` alongside high
+  knowledge). The ending was re-expressed on a floor rather than a gap; a
+  `reputation` cap was tried and rejected for the reason G13 exists — reputation
+  saturates, so a cap on it can never fire. No current build reaches it, so
+  **G1's interim floor is 9 distinct endings for P4**, with the reason and the
+  phases that restore it (P5 mentor arc, P6 teaching role) recorded in the
+  harness beside the constant. Case outcome payloads were also retuned:
+  `publicImpact` belongs to outreach content, not to every patient in the chair,
+  and leaving it there pushed `community_care` to 29.9% of all runs.
+- **Gates after P4:** G1 9 endings, largest `steady_hands` **23.4%**; G2 CR mean
+  **73.146**, population SD **12.583**, max **94**; G3 1,200/1,200 terminate;
+  G5 unchanged; G9 median **730** decisions (was 662); G10 1,200/1,200
+  byte-identical; G12, G13, G15 green; G14 still deferred to P8.
+- **G11 PASS:** typecheck, validator (cases and practicals now checked for step
+  order, execution weights summing to 1, and the soft-lock invariant that every
+  step keeps at least one ungated option), migration fixtures, render smoke
+  (18 screens × EN/ZH, including in-progress and resolved states for both
+  mini-games), production build. The built bundle was also driven through real
+  clicks in a DOM at the live Pages URL: no runtime errors, save written.
+- **Remaining P4 content debt:** 8 of 20 cases and 6 of 12 exercises. The system,
+  the gate and the authoring rules are in place; the rest is content fill.
