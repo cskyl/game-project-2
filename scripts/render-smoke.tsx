@@ -97,6 +97,7 @@ for (const lang of ["en", "zh"] as Lang[]) {
           stallWeeksRemaining: 2,
           submissionCount: 0,
           resubmissions: 0,
+          posterPresented: false,
         },
       ],
       publications: [
@@ -192,16 +193,21 @@ for (const lang of ["en", "zh"] as Lang[]) {
       onContinue: noop,
       onClearSave: noop,
     }),
-    planning: createElement(
-      GameLayout,
-      { state: g, saved: false, onSave: noop, onRestart: noop },
-      createElement(PlanningScreen, {
+    // `children` goes in the props object: GameLayout declares it as a required
+    // prop, and the createElement overload that takes trailing children does not
+    // satisfy a required `children` in the props type.
+    planning: createElement(GameLayout, {
+      state: g,
+      saved: false,
+      onSave: noop,
+      onRestart: noop,
+      children: createElement(PlanningScreen, {
         state: g,
         onAction: noop,
         onPlayCard: noop,
         onFinishWeek: noop,
       }),
-    ),
+    }),
     researchRecruitment: createElement(ResearchDashboard, {
       state: researchRecruitmentState,
       onShowInterest: noop,

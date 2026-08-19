@@ -24,6 +24,11 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # Checks the harness, fixtures, render smoke and validator too. `build`
+      # only checks `src`, and these are bundled by esbuild, which strips types
+      # without checking them — so an error in a gate would surface only if that
+      # exact line happened to execute.
+      - run: npm run typecheck
       - run: npm run validate-content
       - run: npm run test:migration
       - run: npm run balance

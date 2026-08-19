@@ -1,0 +1,19 @@
+// The build only type-checks `src`. The harness, the migration fixtures, the
+// render smoke and the content validator are the things that decide whether a
+// phase gate is real, and they were compiled by esbuild, which strips types
+// without checking them — so a type error in a gate surfaced only if that exact
+// line happened to run. This project checks them under the same strict options.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    // The tools run on Node 20, not in the browser, so they may use ES2022
+    // built-ins (Object.hasOwn) that the shipped bundle deliberately avoids.
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    // These entry points are bundled by esbuild, never imported by anything, so
+    // an unused local is a real leftover rather than a shared-module concern.
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "include": ["scripts", "content-gen", "src"]
+}

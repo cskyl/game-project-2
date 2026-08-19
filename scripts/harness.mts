@@ -72,6 +72,7 @@ import type {
   Action,
   Difficulty,
   GameState,
+  Screen,
   StatBlock,
   StatKey,
 } from "../src/game/types";
@@ -523,6 +524,13 @@ function playPrimary(bot: Bot, difficulty: Difficulty, seed: number): RunResult 
     trace.push(input);
     state = applyInput(state, input);
   };
+  /**
+   * Reads the live screen. The loop below switches on `state.screen`, which
+   * narrows `state` for the rest of that case, but `apply` reassigns it — a
+   * change TypeScript cannot see through the closure. Post-apply screen checks
+   * must read through here, or they compile as impossible comparisons.
+   */
+  const screenNow = (): Screen => state.screen;
 
   while (state.screen !== "ending") {
     checkState(state, `${bot.id}/${difficulty}/${seed}`);
@@ -540,7 +548,7 @@ function playPrimary(bot: Bot, difficulty: Difficulty, seed: number): RunResult 
         electiveChoices.push(electiveId);
         apply({ type: "beginSemester" });
         assert(
-          state.screen === "planning",
+          screenNow() === "planning",
           `${label}: selected elective did not begin semester ${state.semesterIndex + 1}`,
         );
         break;
@@ -683,12 +691,12 @@ function playPrimary(bot: Bot, difficulty: Difficulty, seed: number): RunResult 
             (breakActionCounts[afterSemester] ?? 0) + 1;
           if (turnBefore + 1 < BREAK_ACTIONS_PER_CHAPTER) {
             assert(
-              state.screen === "breakChapter" && state.breakTurn === turnBefore + 1,
+              screenNow() === "breakChapter" && state.breakTurn === turnBefore + 1,
               `${bot.id}/${difficulty}/${seed}: break turn ${turnBefore + 1} did not advance exactly once`,
             );
           } else {
             assert(
-              state.screen === "semesterOpen" &&
+              screenNow() === "semesterOpen" &&
                 state.semesterIndex + 1 === afterSemester + 1,
               `${bot.id}/${difficulty}/${seed}: third break action did not open semester ${afterSemester + 1}`,
             );
@@ -1155,6 +1163,7 @@ function foundationChecks(): void {
           stallWeeksRemaining: 0,
           submissionCount: 0,
           resubmissions: 0,
+          posterPresented: false,
         },
       ],
     },

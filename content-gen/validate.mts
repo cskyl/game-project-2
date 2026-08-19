@@ -27,6 +27,9 @@ import type {
 } from "../src/game/types";
 import type { ModifierHook } from "../src/game/modifiers";
 
+/** Node-only, and the tools deliberately avoid a @types/node dependency. */
+declare const process: { exitCode?: number };
+
 export type ValidationIssue = { path: string; message: string };
 
 const STAGES = new Set<Stage | "any">([
@@ -271,10 +274,15 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
   for (const [label, root] of localizedRoots) {
     issues.push(...validateLocalizedTexts(root, label));
     const count = (node: unknown): number => {
-      if (Array.isArray(node)) return node.reduce((sum, item) => sum + count(item), 0);
+      if (Array.isArray(node)) {
+        return (node as unknown[]).reduce<number>((sum, item) => sum + count(item), 0);
+      }
       if (!isRecord(node)) return 0;
       const here = Object.hasOwn(node, "en") || Object.hasOwn(node, "zh") ? 1 : 0;
-      return here + Object.values(node).reduce((sum, item) => sum + count(item), 0);
+      return (
+        here +
+        Object.values(node).reduce<number>((sum, item) => sum + count(item), 0)
+      );
     };
     localizedCount += count(root);
   }
@@ -362,8 +370,16 @@ function runValidation(): { issues: ValidationIssue[]; warnings: string[]; local
       if (hook.on === "softCapBand" && !STATS.has(hook.stat)) {
         issues.push({ path, message: `unknown soft-cap hook stat "${hook.stat}"` });
       }
-      if ("add" in hook && !Number.isFinite(hook.add)) issues.push({ path, message: "hook add must be finite" });
-      if ("mult" in hook && (!Number.isFinite(hook.mult) || hook.mult <= 0)) issues.push({ path, message: "hook multiplier must be positive and finite" });
+      // `"add" in hook` is true for an optional property explicitly set to
+      // undefined, so read the value and test that instead of the key.
+      const add = "add" in hook ? hook.add : undefined;
+      const mult = "mult" in hook ? hook.mult : undefined;
+      if (add !== undefined && !Number.isFinite(add)) {
+        issues.push({ path, message: "hook add must be finite" });
+      }
+      if (mult !== undefined && (!Number.isFinite(mult) || mult <= 0)) {
+        issues.push({ path, message: "hook multiplier must be positive and finite" });
+      }
     }
   };
   const hasCurrentActionEffect = (hooks: readonly ModifierHook[]): boolean => hooks.some((hook) => {

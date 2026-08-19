@@ -53,10 +53,17 @@ export type V1GameState = Omit<
   | "breakChoices"
   | "matchApplications"
   | "weekGains"
+  | "softCapCarry"
   | "pendingCaseId"
   | "pendingSimLabId"
   | "pendingBreakId"
   | "breakTurn"
+  // Omitted so the narrowed V2-free shapes below actually replace them. Without
+  // this, the intersection keeps the full `Record<StatKey, number>` from
+  // `GameState` and a V1 save is typed as *requiring* `focus` and `standing` —
+  // the exact opposite of what this type exists to say.
+  | "stats"
+  | "weekStartStats"
 > & {
   version: "1.0.0";
   stats: Omit<Record<StatKey, number>, "focus" | "standing">;

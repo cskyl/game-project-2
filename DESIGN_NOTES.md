@@ -312,3 +312,14 @@ confirmed accurate before any change was made.
   but it was only present as a hoisted transitive dependency of Vite. That works
   today and would break silently the day Vite changes how it vendors esbuild,
   taking the whole test suite with it.
+- **The tools are type-checked now (`tsconfig.tools.json`, `npm run typecheck`).**
+  `npm run build` only checks `src`, and the harness, migration fixtures, render
+  smoke and content validator are bundled by esbuild, which strips types without
+  checking them — so a type error in a *gate* surfaced only if that exact line
+  happened to execute. Turning the check on found 15 real errors, including two
+  fixtures that had drifted out of sync with `ResearchProject` (they were
+  exercising a shape the engine no longer produces) and a wrong `V1GameState`:
+  its `Omit` did not exclude `stats`/`weekStartStats`, so the intersection kept
+  the full `Record<StatKey, number>` and the type said a V1 save *requires*
+  `focus` and `standing` — the exact opposite of what it exists to express. CI
+  runs `typecheck` before everything else.

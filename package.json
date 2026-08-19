@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.json && vite build",
+    "typecheck": "tsc -p tsconfig.tools.json --noEmit",
     "_comment": "Harness bundles go to node_modules/.cache: always writable, always ignored, and identical on a workstation, an HPC login node, and a CI runner. Never an absolute machine-specific path — CI has no /scratch.",
     "tmpdir": "node -e \"require('fs').mkdirSync('node_modules/.cache/dsls-v2',{recursive:true})\"",
     "smoke": "npm run tmpdir && esbuild scripts/smoke.mts --bundle --platform=node --format=esm --outfile=node_modules/.cache/dsls-v2/smoke.bundle.mjs && node node_modules/.cache/dsls-v2/smoke.bundle.mjs --quick",
