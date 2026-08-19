@@ -1,114 +1,87 @@
+// ---------------------------------------------------------------------------
+// Engine facade.
+//
+// This module owns run creation and the player verbs, and re-exports the rest
+// of the public surface. All resolution logic lives in `./systems/*`, which own
+// their own state transitions; the engine only wires verbs to systems so the
+// week, boss, research, break, and calendar layers stay independently testable.
+// ---------------------------------------------------------------------------
+
 import { ACTIONS } from "../data/actions";
-import { BOSSES } from "../data/bosses";
-import { CARDS, CARDS_BY_ID } from "../data/cards";
-import { ENDINGS } from "../data/endings";
-import { EVENTS_BY_ID } from "../data/events";
+import { CARDS } from "../data/cards";
 import { personalization } from "../data/personalization";
-import { SEMESTERS } from "../data/semesters";
-import {
-  DIFFICULTY,
-  MAX_CARDS_PLAYED_PER_WEEK,
-  MONEY_MIN,
-  SAVE_VERSION,
-  SEMESTER_COUNT,
-  WEEKS_PER_SEMESTER,
-} from "./constants";
+import { DIFFICULTY, MONEY_MIN, SAVE_VERSION } from "./constants";
 import { INITIAL_STATS } from "./initialState";
-import {
-  careerReadiness,
-  computeThresholds,
-  evaluateCondition,
-  getStat,
-  wellness,
-} from "./balance";
-import { chance, normalizeSeed, randomInt } from "./rng";
-import {
-  applyWeeklyThresholdHooks,
-  collectHooks,
-  sumHookAdds,
-} from "./modifiers";
+import { evaluateCondition } from "./balance";
+import { normalizeSeed } from "./rng";
+import { checkAchievements } from "./systems/achievements";
 import { contextualActionEffects } from "./systems/actions";
-import { drawWeeklyCards } from "./systems/deck";
-import {
-  selectCrisisEvent,
-  selectWeeklyEvent,
-} from "./systems/events";
-import {
-  applyEffects,
-  initialRunTimestamp,
-  transitionState,
-} from "./systems/state";
-import {
-  actionPointBreakdown,
-  bossSemesterRamp,
-  skillDriftEffects,
-} from "./systems/progression";
-import { openSemester, isBreakSemester } from "./systems/calendar";
-import { canBeginSemester, chooseElectiveState } from "./systems/electives";
 import {
   chooseBreakTrackState,
-  openBreakChapter,
   takeBreakActionState,
 } from "./systems/breaks";
+import { currentSemesterId, openSemester } from "./systems/calendar";
+import { canBeginSemester, chooseElectiveState } from "./systems/electives";
 import {
-  abandonResearchProjectState,
   applySummerResearchBreakState,
   applyResearchActionState,
-  closeResearchDashboardState,
   isResearchActionAvailable,
-  joinResearchLabState,
-  openResearchDashboardState,
-  resubmitResearchProjectState,
-  selectActiveResearchProjectState,
-  startResearchProjectState,
-  tickResearch,
 } from "./systems/research";
-import type {
-  Action,
-  Boss,
-  BossOutcomeKey,
-  Difficulty,
-  Ending,
-  GameState,
-  LocalizedText,
-  Semester,
-} from "./types";
+import { applyEffects, initialRunTimestamp, transitionState } from "./systems/state";
+import { startWeek } from "./systems/week";
+import type { Action, Difficulty, GameState } from "./types";
 
-const RECOVERY_EVENT_ID = "well_recovery_week";
+// --- Public surface owned by the systems layer -----------------------------
 
-const WEEKLY_LABEL: LocalizedText = {
-  en: "Weekly adjustments",
-  zh: "每周自动调整",
-};
+export {
+  currentSemester,
+  currentSemesterId,
+  isFinalSemester,
+} from "./systems/calendar";
+export {
+  continueAfterEvent,
+  continueAfterWeeklySummary,
+  finishWeek,
+  playCard,
+  resolveEventChoice,
+} from "./systems/week";
+export {
+  advanceAfterBoss,
+  bossBreakdown,
+  bossReadiness,
+  determineEnding,
+  resolveBoss,
+} from "./systems/boss";
+export type { BossBreakdown } from "./systems/boss";
+export {
+  abandonResearchProjectState as abandonResearchProject,
+  closeResearchDashboardState as closeResearchDashboard,
+  joinResearchLabState as joinResearchLab,
+  openResearchDashboardState as openResearchDashboard,
+  resubmitResearchProjectState as resubmitResearchProject,
+  selectActiveResearchProjectState as selectActiveResearchProject,
+  startResearchProjectState as startResearchProject,
+} from "./systems/research";
 
-const SKILL_DRIFT_LABEL: LocalizedText = {
-  en: "Skill drift: core skills you did not train faded this week.",
-  zh: "技能回落：本周没有练到的核心能力有所生疏。",
-};
+// --- Action availability ---------------------------------------------------
 
 const ACTIONS_BY_ID: Record<string, Action> = Object.fromEntries(
   ACTIONS.map((a) => [a.id, a]),
 );
-const BOSS_BY_ID: Record<string, Boss> = Object.fromEntries(
-  BOSSES.map((b) => [b.id, b]),
-);
-const BOSS_BY_SEMESTER: Record<number, Boss> = Object.fromEntries(
-  BOSSES.map((b) => [b.semesterId, b]),
-);
 
-export const currentSemester = (s: GameState): Semester => SEMESTERS[s.semesterIndex];
-export const currentSemesterId = (s: GameState): number => s.semesterIndex + 1;
-export const isFinalSemester = (s: GameState): boolean =>
-  s.semesterIndex >= SEMESTER_COUNT - 1;
-
-// ---------------------------------------------------------------------------
-// Action availability
-// ---------------------------------------------------------------------------
+/** Research verbs belong to the dashboard; everything else to planning. */
+const isResearchActionId = (actionId: string): boolean =>
+  actionId === "research_interest" || actionId === "lab_work";
 
 export function isActionUnlocked(action: Action, state: GameState): boolean {
   if (!isResearchActionAvailable(state, action.id)) return false;
   if (!action.unlock) return true;
-  return evaluateCondition(state.stats, state.flags, currentSemesterId(state), action.unlock);
+  return evaluateCondition(
+    state.stats,
+    state.flags,
+    currentSemesterId(state),
+    action.unlock,
+  );
 }
 
 export type ActionStatus = {
@@ -120,8 +93,7 @@ export type ActionStatus = {
 };
 
 export function actionStatus(action: Action, state: GameState): ActionStatus {
-  const isResearchAction = action.id === "research_interest" || action.id === "lab_work";
-  const correctScreen = isResearchAction
+  const correctScreen = isResearchActionId(action.id)
     ? state.screen === "researchDashboard"
     : state.screen === "planning";
   const unlocked = correctScreen && isActionUnlocked(action, state);
@@ -137,59 +109,7 @@ export function actionStatus(action: Action, state: GameState): ActionStatus {
   };
 }
 
-export function playCard(state: GameState, cardId: string): GameState {
-  if (state.screen !== "planning") return state;
-  if (state.cardsPlayedThisWeek >= MAX_CARDS_PLAYED_PER_WEEK) return state;
-  if (!state.weeklyCards.includes(cardId)) return state;
-  const card = CARDS_BY_ID[cardId];
-  if (!card) return state;
-  let next = applyEffects(state, card.effects, {
-    scale: true,
-    log: true,
-    kind: "card",
-    text: card.title,
-  });
-  next = transitionState(next, {
-    weeklyCards: next.weeklyCards.filter((id) => id !== cardId),
-    cardsPlayedThisWeek: next.cardsPlayedThisWeek + 1,
-  });
-  return checkAchievements(next);
-}
-
-// ---------------------------------------------------------------------------
-// Week lifecycle
-// ---------------------------------------------------------------------------
-
-function startWeek(
-  state: GameState,
-  opts: { semesterIndex: number; weekInSemester: number },
-): GameState {
-  const sem = SEMESTERS[opts.semesterIndex];
-  const [cards, randomState] = drawWeeklyCards(
-    state,
-    opts.semesterIndex + 1,
-    sem.stage,
-  );
-  return transitionState(randomState, {
-    semesterIndex: opts.semesterIndex,
-    weekInSemester: opts.weekInSemester,
-    globalWeek: randomState.globalWeek + 1,
-    actionPointsRemaining: actionPointBreakdown(
-      randomState.difficulty,
-      opts.semesterIndex + 1,
-      randomState.stats.stamina,
-      collectHooks(randomState),
-    ).total,
-    weekGains: {},
-    weekStartStats: { ...randomState.stats },
-    weeklyCards: cards,
-    cardsPlayedThisWeek: 0,
-    weekWarnings: [],
-    screen: "planning",
-    pendingEventId: undefined,
-    pendingChoiceId: undefined,
-  });
-}
+// --- Run creation ----------------------------------------------------------
 
 export type NewGameOptions = { seed?: number | string };
 
@@ -239,6 +159,7 @@ export function newGame(
     breakChoices: [],
     matchApplications: [],
     weekGains: {},
+    softCapCarry: {},
     pendingCaseId: undefined,
     pendingSimLabId: undefined,
     pendingBreakId: undefined,
@@ -263,6 +184,8 @@ export function newGame(
   // The first player decision is the semester-open draft, not a hidden week.
   return openSemester(base, 0);
 }
+
+// --- Player verbs ----------------------------------------------------------
 
 /** Select one of the three seeded elective offers for the current semester. */
 export function chooseElective(state: GameState, electiveId: string): GameState {
@@ -289,16 +212,8 @@ export function takeBreakAction(state: GameState, actionId: string): GameState {
   return takeBreakActionState(withResearch, actionId);
 }
 
-export const openResearchDashboard = openResearchDashboardState;
-export const closeResearchDashboard = closeResearchDashboardState;
-export const joinResearchLab = joinResearchLabState;
-export const startResearchProject = startResearchProjectState;
-export const selectActiveResearchProject = selectActiveResearchProjectState;
-export const resubmitResearchProject = resubmitResearchProjectState;
-export const abandonResearchProject = abandonResearchProjectState;
-
 export function chooseAction(state: GameState, actionId: string): GameState {
-  const isResearchAction = actionId === "research_interest" || actionId === "lab_work";
+  const isResearchAction = isResearchActionId(actionId);
   if (
     (isResearchAction && state.screen !== "researchDashboard") ||
     (!isResearchAction && state.screen !== "planning")
@@ -321,273 +236,4 @@ export function chooseAction(state: GameState, actionId: string): GameState {
     actionPointsRemaining: next.actionPointsRemaining - action.cost,
   });
   return checkAchievements(next);
-}
-
-export function finishWeek(state: GameState): GameState {
-  if (state.screen !== "planning") return state;
-  const thr = computeThresholds(state.stats, state.difficulty);
-  const thresholdEffects = applyWeeklyThresholdHooks(
-    thr.effects,
-    collectHooks(state),
-  );
-  const lowMood = state.stats.mood < 20;
-  const lowMoodStreak = lowMood ? state.lowMoodStreak + 1 : 0;
-
-  let next = state;
-  if (Object.keys(thresholdEffects).length > 0) {
-    next = applyEffects(next, thresholdEffects, {
-      scale: false,
-      log: true,
-      kind: "system",
-      text: WEEKLY_LABEL,
-    });
-  }
-
-  const driftEffects = skillDriftEffects(
-    currentSemester(next).stage,
-    next.stats,
-    next.weekGains,
-  );
-  if (Object.keys(driftEffects).length > 0) {
-    next = applyEffects(next, driftEffects, {
-      scale: false,
-      log: true,
-      kind: "drift",
-      text: SKILL_DRIFT_LABEL,
-    });
-  }
-
-  // Authoritative §3.2 step 4.3: research resolves after drift and before all
-  // later weekly systems (finance/wellness/cases arrive in their own phases).
-  next = tickResearch(next);
-
-  let flags = next.flags;
-  if (thr.hitCriticalStress && !flags.includes("hit_critical_stress")) {
-    flags = [...flags, "hit_critical_stress"];
-  }
-  next = transitionState(next, {
-    flags,
-    lowMoodStreak,
-    weekWarnings: thr.warnings,
-  });
-  next = checkAchievements(next);
-
-  // Choose this week's event.
-  let eventId: string | undefined;
-  if (lowMoodStreak >= 3 && EVENTS_BY_ID[RECOVERY_EVENT_ID]) {
-    eventId = RECOVERY_EVENT_ID;
-  }
-  if (!eventId && thr.crisisChance > 0) {
-    const [triggerCrisis, randomState] = chance(next, thr.crisisChance);
-    next = randomState;
-    if (triggerCrisis) {
-      [eventId, next] = selectCrisisEvent(next);
-    }
-  }
-  if (!eventId) {
-    [eventId, next] = selectWeeklyEvent(next);
-  }
-
-  if (eventId) {
-    next = transitionState(next, {
-      pendingEventId: eventId,
-      pendingChoiceId: undefined,
-      screen: "event",
-    });
-  } else {
-    next = transitionState(next, {
-      pendingEventId: undefined,
-      pendingChoiceId: undefined,
-      screen: "weeklySummary",
-    });
-  }
-  return next;
-}
-
-export function resolveEventChoice(state: GameState, choiceId: string): GameState {
-  const event = state.pendingEventId ? EVENTS_BY_ID[state.pendingEventId] : undefined;
-  if (!event) return transitionState(state, { screen: "weeklySummary" });
-  const choice = event.choices.find((c) => c.id === choiceId);
-  if (!choice) return state;
-  // Requirement gate (if any) — ignore unmet choices.
-  if (
-    choice.requirements &&
-    !evaluateCondition(state.stats, state.flags, currentSemesterId(state), choice.requirements)
-  ) {
-    return state;
-  }
-  let next = applyEffects(state, choice.effects, {
-    scale: true,
-    log: true,
-    kind: "event",
-    text: event.title,
-  });
-  let flags = next.flags;
-  if (choice.addFlags) flags = Array.from(new Set([...flags, ...choice.addFlags]));
-  if (choice.removeFlags) flags = flags.filter((f) => !choice.removeFlags!.includes(f));
-  const eventHistory = [...next.eventHistory, event.id].slice(-50);
-  next = transitionState(next, {
-    flags,
-    eventHistory,
-    pendingChoiceId: choiceId,
-  });
-  return checkAchievements(next);
-}
-
-export function continueAfterEvent(state: GameState): GameState {
-  return transitionState(state, { screen: "weeklySummary" });
-}
-
-export function continueAfterWeeklySummary(state: GameState): GameState {
-  if (state.weekInSemester >= WEEKS_PER_SEMESTER) {
-    const boss = BOSS_BY_SEMESTER[currentSemesterId(state)];
-    // Defensive: if a semester has no configured boss, skip the check entirely
-    // (advance to next semester or the ending) rather than entering a dead screen.
-    if (!boss) return advanceAfterBoss(state);
-    return transitionState(state, {
-      screen: "boss",
-      pendingBossId: boss.id,
-      lastBossResult: undefined,
-      pendingEventId: undefined,
-      pendingChoiceId: undefined,
-      weekWarnings: [],
-    });
-  }
-  return startWeek(state, {
-    semesterIndex: state.semesterIndex,
-    weekInSemester: state.weekInSemester + 1,
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Boss checks
-// ---------------------------------------------------------------------------
-
-export type BossBreakdown = {
-  weighted: number;
-  wellnessMod: number;
-  stressMod: number;
-  staminaBonus: number;
-  semesterRamp: number;
-  base: number;
-};
-
-export function bossBreakdown(boss: Boss, state: GameState): BossBreakdown {
-  const s = state.stats;
-  let weighted = 0;
-  for (const r of boss.requiredStats) weighted += getStat(s, r.stat) * r.weight;
-  const wellnessMod = (wellness(s) - 50) * 0.2;
-  const stressMod = s.stress >= 30 && s.stress <= 70 ? 5 : s.stress > 85 ? -8 : 0;
-  const staminaBonus = s.stamina > 75 ? 5 : 0;
-  const semesterRamp = bossSemesterRamp(boss.semesterId);
-  const base = weighted + wellnessMod + stressMod + staminaBonus + semesterRamp;
-  return { weighted, wellnessMod, stressMod, staminaBonus, semesterRamp, base };
-}
-
-/** Deterministic 0–100 readiness preview (no random roll). */
-export function bossReadiness(boss: Boss, state: GameState): number {
-  return Math.max(0, Math.min(100, Math.round(bossBreakdown(boss, state).base)));
-}
-
-function scoreToOutcome(score: number): BossOutcomeKey {
-  if (score >= 75) return "great";
-  if (score >= 55) return "pass";
-  if (score >= 40) return "barely";
-  return "struggle";
-}
-
-export function resolveBoss(state: GameState): GameState {
-  const boss =
-    (state.pendingBossId && BOSS_BY_ID[state.pendingBossId]) ||
-    BOSS_BY_SEMESTER[currentSemesterId(state)];
-  if (!boss) return state;
-  const cfg = DIFFICULTY[state.difficulty];
-  const base = bossBreakdown(boss, state).base;
-  const [roll, randomState] = randomInt(
-    state,
-    cfg.bossRoll[0],
-    cfg.bossRoll[1],
-  );
-  const modifier = sumHookAdds(collectHooks(state), "bossRoll");
-  const score = Math.max(0, Math.min(100, Math.round(base + roll + modifier)));
-  const outcome = scoreToOutcome(score);
-  const out = boss.outcomes[outcome];
-
-  let next = applyEffects(randomState, out.effects, {
-    scale: true,
-    log: true,
-    kind: "boss",
-    text: boss.title,
-  });
-  const result = { bossId: boss.id, semesterId: boss.semesterId, score, outcome };
-  next = transitionState(next, {
-    bossHistory: [...next.bossHistory, result],
-    lastBossResult: result,
-    pendingBossId: boss.id,
-  });
-  if (outcome === "great") next = unlockAchievement(next, "first_boss_great");
-  return checkAchievements(next);
-}
-
-export function advanceAfterBoss(state: GameState): GameState {
-  if (isFinalSemester(state)) {
-    const ending = determineEnding(state);
-    let next: GameState = transitionState(state, {
-      endingId: ending.id,
-      screen: "ending",
-      pendingBossId: undefined,
-      lastBossResult: undefined,
-    });
-    return checkEndingAchievements(next);
-  }
-  const next = transitionState(state, {
-    pendingBossId: undefined,
-    lastBossResult: undefined,
-  });
-  const completedSemester = state.semesterIndex + 1;
-  if (isBreakSemester(completedSemester)) return openBreakChapter(next);
-  return openSemester(next, state.semesterIndex + 1);
-}
-
-// ---------------------------------------------------------------------------
-// Endings
-// ---------------------------------------------------------------------------
-
-export function determineEnding(state: GameState): Ending {
-  const semId = currentSemesterId(state);
-  const matches = ENDINGS.filter((e) =>
-    evaluateCondition(state.stats, state.flags, semId, e.condition),
-  ).sort((a, b) => b.priority - a.priority);
-  return matches[0] ?? ENDINGS[ENDINGS.length - 1];
-}
-
-// ---------------------------------------------------------------------------
-// Achievements
-// ---------------------------------------------------------------------------
-
-function unlockAchievement(state: GameState, id: string): GameState {
-  if (state.unlockedAchievements.includes(id)) return state;
-  return { ...state, unlockedAchievements: [...state.unlockedAchievements, id] };
-}
-
-function checkAchievements(state: GameState): GameState {
-  let next = state;
-  const s = state.stats;
-  if (s.empathy >= 80) next = unlockAchievement(next, "patient_trust");
-  if (s.handSkill >= 80) next = unlockAchievement(next, "steady_hands");
-  if (s.love >= 80) next = unlockAchievement(next, "well_supported");
-  if (s.publicImpact >= 80) next = unlockAchievement(next, "community_heart");
-  if (state.flags.includes("hit_critical_stress") && s.stress < 50) {
-    next = unlockAchievement(next, "stress_survivor");
-  }
-  return next;
-}
-
-function checkEndingAchievements(state: GameState): GameState {
-  let next = checkAchievements(state);
-  const s = state.stats;
-  if (s.mood > 60 && s.stamina > 60 && careerReadiness(s) > 60) {
-    next = unlockAchievement(next, "balanced_life");
-  }
-  return next;
 }

@@ -66,6 +66,8 @@ implementation detail open. The frozen design remains authoritative.
   Flooring makes each band an actual reduction instead of allowing half-point
   rounding to repeatedly inflate multi-action weeks; negative effects remain
   unchanged, exactly as required by §4.2.
+  **Superseded 2026-08-13 — see the post-review corrections below.** The rule
+  was implemented exactly as §4.2 specified it; §4.2 itself was wrong.
 - **Dynamic weakest-skill action.** Repeating `ask_help` previously farmed its
   +4 weakest-skill branch several times in one week, allowing a nominally broad
   action to raise all three drift skills while bypassing their opportunity
@@ -244,3 +246,54 @@ implementation detail open. The frozen design remains authoritative.
   publications and posters live in `ResearchState`. P7's Match implementation
   must compute its weighted research-output term from those canonical ledgers
   (and future grants), not infer counts back from the research stat.
+
+## 2026-08-13 — post-review corrections (main agent)
+
+Findings from an independent review of the P0–P3 work, with the full 1,200-run
+sweep reproduced locally first. Every phase receipt in `PHASE_REPORTS.md` was
+confirmed accurate before any change was made.
+
+- **The §4.2 positive-gain floor was a design defect, not an implementation
+  one.** `max(1, floor(delta * multiplier))` guaranteed a whole point on every
+  positive touch, so for the 147 of 218 authored positive deltas that are ≤5
+  (67.4%) the 0.5 / 0.3 / 0.15 bands all collapsed to the same +1: a delta of 3
+  delivered exactly one point at 75, 85 and 95 alike. §4.2 now specifies a
+  banked fractional remainder (`GameState.softCapCarry`, per stat, in `[0, 1)`),
+  so each band is applied exactly over repeated touches while gains still never
+  stop. The harness asserts the bands are *strictly* ordered over ten repeated
+  touches, which the old floor fails.
+- **Saturation is a content problem once the formula is right.** Attributing
+  every positive `confidence` delta across full runs showed ~33 grants per run
+  arriving entirely from cards (48 touches / 3 runs), events (31) and bosses
+  (20) — none of them a player choice. The stat therefore climbs through the
+  cheap low bands and pins at 100 regardless of the top band, so no additional
+  band was invented to paper over it. G13 measures per-stat saturation and
+  records `confidence` as explicit debt owned by P9 content tuning.
+- **G13 ratchets in both directions.** A newly saturating stat fails the gate,
+  and a listed stat that stops saturating also fails, forcing its entry to be
+  deleted. The debt list can only shrink, and it is printed on every sweep.
+- **G14 is measured per bot, not pooled.** G1 bounds the ending distribution
+  across all bots together and passed at 23.1% while `hands-max` reached
+  `steady_hands` in 120 of 120 runs. Pooled variety cannot answer the
+  replayability question, so per-bot concentration is now reported every sweep
+  and gated at 60% from P8, which owns run variance.
+- **Week lifecycle extracted before P4, not at the 600-line cap.** `engine.ts`
+  stood at 593 of its 600-line budget with nine phases of systems still to
+  land. `systems/week.ts`, `systems/boss.ts` and `systems/achievements.ts` now
+  own the week, the semester check, and awards; the calendar owns the
+  `currentSemester` / `currentSemesterId` / `isFinalSemester` cursors; and
+  `engine.ts` is a 239-line facade of run creation, player verbs, and
+  re-exports. The refactor is behaviour-preserving: the full sweep reproduces
+  every pre-refactor figure exactly, including the ending distribution, CR
+  mean/SD/max, median decisions, and 1,200/1,200 byte-identical replays.
+- **Save cursors are range-validated, not merely finite.** `isV2State` accepted
+  any finite `semesterIndex`, so a stored `semesterIndex: 999` loaded and then
+  threw the first time a screen read `SEMESTERS[semesterIndex]`. Both cursors
+  are now range-checked, and `migrateV1` clamps them because its result is
+  returned without passing through the strict validator. Found by the codex
+  adversarial pass.
+- **`softCapCarry` hydrates rather than bumping the save version.** A save
+  written before the ledger has no banked fractions, which is exactly an empty
+  ledger — a zero default, not a guess. This follows the existing in-development
+  V2 hydration path used for the P1/P2/P3 fields. A structurally invalid ledger
+  (out of `[0, 1)`, or keyed by a non-stat) is still refused.

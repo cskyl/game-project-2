@@ -9,6 +9,17 @@ import type { GameState } from "../types";
 /** Number of offers the player sees at each semester open. */
 export const ELECTIVE_OFFER_COUNT = 3;
 
+// The calendar owns where a run sits in time. These read-only cursors live here
+// so the week, boss, and UI layers share one definition.
+
+export const currentSemester = (state: GameState) => SEMESTERS[state.semesterIndex];
+
+export const currentSemesterId = (state: GameState): number =>
+  state.semesterIndex + 1;
+
+export const isFinalSemester = (state: GameState): boolean =>
+  state.semesterIndex >= SEMESTER_COUNT - 1;
+
 /**
  * Draw a seeded, stage/prerequisite-filtered elective draft.  The draft is
  * stored in state before the player sees it, so loading a save never rerolls

@@ -1,3 +1,5 @@
+import { SEMESTER_COUNT, WEEKS_PER_SEMESTER } from "../src/game/constants";
+import { SEMESTERS } from "../src/data/semesters";
 import { INITIAL_STATS } from "../src/game/initialState";
 import { migrateSave, type V1GameState } from "../src/game/migration";
 import { nextRandom } from "../src/game/rng";
@@ -194,6 +196,64 @@ assertRefusedWithoutThrow(
   { ...p2Save, research: { ...p2Research, activity: "not-an-array" } },
   "malformed",
   "P2 save with malformed research activity",
+);
+
+// Saves written before the soft-cap carry ledger hydrate to an empty ledger,
+// which is exactly what "no fractions banked yet" means. A structurally wrong
+// ledger is still rejected.
+const { softCapCarry: _oldCarry, ...preCarrySave } = migrated.state;
+const carryLoaded = migrateSave(preCarrySave);
+assert(carryLoaded.ok && carryLoaded.migrated, "pre-carry V2 save was not hydrated");
+assert(
+  Object.keys(carryLoaded.state.softCapCarry).length === 0,
+  "soft-cap carry default wrong",
+);
+assert(
+  migrateSave({ ...migrated.state, softCapCarry: { knowledge: 0.5 } }).ok,
+  "a valid banked fraction was rejected",
+);
+for (const badCarry of [{ knowledge: 1 }, { knowledge: -0.5 }, { notAStat: 0.5 }, "nope"]) {
+  assertRefusedWithoutThrow(
+    { ...migrated.state, softCapCarry: badCarry },
+    "malformed",
+    `soft-cap carry ${JSON.stringify(badCarry)}`,
+  );
+}
+
+// The calendar is indexed directly, so an out-of-range cursor that merely
+// passed a finite-number check would load and then throw on the first screen
+// that reads the semester. Both cursors must be range-validated, and a legacy
+// V1 cursor must be clamped rather than carried through.
+for (const [field, badValue] of [
+  ["semesterIndex", 999],
+  ["semesterIndex", -1],
+  ["semesterIndex", 1.5],
+  ["weekInSemester", 0],
+  ["weekInSemester", 99],
+] as const) {
+  assertRefusedWithoutThrow(
+    { ...migrated.state, [field]: badValue },
+    "malformed",
+    `V2 save with ${field}=${badValue}`,
+  );
+}
+const clampedLegacy = migrateSave({
+  ...fixture,
+  semesterIndex: 999,
+  weekInSemester: 42,
+});
+assert(clampedLegacy.ok, "legacy save with an out-of-range cursor must be sanitized");
+assert(
+  clampedLegacy.state.semesterIndex === SEMESTER_COUNT - 1,
+  `legacy semesterIndex was not clamped (${clampedLegacy.state.semesterIndex})`,
+);
+assert(
+  clampedLegacy.state.weekInSemester === WEEKS_PER_SEMESTER,
+  `legacy weekInSemester was not clamped (${clampedLegacy.state.weekInSemester})`,
+);
+assert(
+  SEMESTERS[clampedLegacy.state.semesterIndex] !== undefined,
+  "clamped legacy cursor still misses the calendar",
 );
 
 const invalidRngState = {

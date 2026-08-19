@@ -392,6 +392,12 @@ export type GameState = {
   breakChoices: BreakChoice[];
   matchApplications: MatchApplication[];
   weekGains: StatBlock;
+  /**
+   * Fractional soft-cap remainder per stat, always in [0, 1). Diminished gains
+   * accumulate here so a band multiplier is applied exactly over repeated
+   * touches instead of every touch rounding up to a flat point.
+   */
+  softCapCarry: StatBlock;
   /** Snapshot of stats at the start of the current week (for the summary). */
   weekStartStats: Record<StatKey, number>;
   flags: string[];

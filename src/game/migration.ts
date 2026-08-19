@@ -1,5 +1,5 @@
 import { CARDS } from "../data/cards";
-import { SAVE_VERSION } from "./constants";
+import { SAVE_VERSION, SEMESTER_COUNT, WEEKS_PER_SEMESTER } from "./constants";
 import { INITIAL_STATS } from "./initialState";
 import { normalizeSeed } from "./rng";
 import type {
@@ -345,6 +345,31 @@ function isBreakTurn(value: unknown): value is number {
   return isNonNegativeInteger(value) && value <= 3;
 }
 
+/** Soft-cap remainders are banked fractions; anything outside [0, 1) is corrupt. */
+function isSoftCapCarry(value: unknown): value is StatBlock {
+  return (
+    isStatBlock(value) &&
+    Object.values(value).every(
+      (amount) => amount !== undefined && amount >= 0 && amount < 1,
+    )
+  );
+}
+
+/**
+ * The calendar is indexed directly (`SEMESTERS[semesterIndex]`), so a save that
+ * merely holds a finite number here would pass validation and then throw the
+ * first time a screen reads the semester. Both cursors are range-checked.
+ */
+function isSemesterIndex(value: unknown): value is number {
+  return isNonNegativeInteger(value) && value < SEMESTER_COUNT;
+}
+
+function isWeekInSemester(value: unknown): value is number {
+  return (
+    isNonNegativeInteger(value) && value >= 1 && value <= WEEKS_PER_SEMESTER
+  );
+}
+
 function isMatchApplication(value: unknown): value is MatchApplication {
   return (
     isRecord(value) &&
@@ -374,8 +399,8 @@ function isV2State(value: unknown): value is GameState {
     (value.migrationNotice === undefined || isLocalizedText(value.migrationNotice)) &&
     typeof value.playerName === "string" &&
     isDifficulty(value.difficulty) &&
-    isFiniteNumber(value.semesterIndex) &&
-    isFiniteNumber(value.weekInSemester) &&
+    isSemesterIndex(value.semesterIndex) &&
+    isWeekInSemester(value.weekInSemester) &&
     isFiniteNumber(value.globalWeek) &&
     isFiniteNumber(value.actionPointsRemaining) &&
     isCompleteStats(value.stats) &&
@@ -402,6 +427,7 @@ function isV2State(value: unknown): value is GameState {
     Array.isArray(value.matchApplications) &&
     value.matchApplications.every(isMatchApplication) &&
     isStatBlock(value.weekGains) &&
+    isSoftCapCarry(value.softCapCarry) &&
     isCompleteStats(value.weekStartStats) &&
     isStringArray(value.flags) &&
     isStringArray(value.eventHistory) &&
@@ -453,6 +479,16 @@ function finiteOr(value: unknown, fallback: number): number {
   return isFiniteNumber(value) ? value : fallback;
 }
 
+function clampInteger(
+  value: unknown,
+  min: number,
+  max: number,
+  fallback: number,
+): number {
+  if (!isFiniteNumber(value)) return fallback;
+  return Math.max(min, Math.min(max, Math.round(value)));
+}
+
 function stringsFrom(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((entry): entry is string => typeof entry === "string")
@@ -492,8 +528,11 @@ function migrateV1(value: UnknownRecord): SaveLoadResult {
     migrationNotice: MIGRATION_NOTICE,
     playerName: typeof value.playerName === "string" ? value.playerName : "Player",
     difficulty: isDifficulty(value.difficulty) ? value.difficulty : "normal",
-    semesterIndex: finiteOr(value.semesterIndex, 0),
-    weekInSemester: finiteOr(value.weekInSemester, 1),
+    // Clamped, not merely coerced: migrateV1 returns without passing through
+    // the strict V2 shape check, so an out-of-range legacy cursor would reach
+    // the calendar and throw on the first screen.
+    semesterIndex: clampInteger(value.semesterIndex, 0, SEMESTER_COUNT - 1, 0),
+    weekInSemester: clampInteger(value.weekInSemester, 1, WEEKS_PER_SEMESTER, 1),
     globalWeek: finiteOr(value.globalWeek, 0),
     actionPointsRemaining: finiteOr(value.actionPointsRemaining, 6),
     stats,
@@ -526,6 +565,7 @@ function migrateV1(value: UnknownRecord): SaveLoadResult {
     breakChoices: [],
     matchApplications: [],
     weekGains: {},
+    softCapCarry: {},
     weekStartStats,
     flags: stringsFrom(value.flags),
     eventHistory: stringsFrom(value.eventHistory),
@@ -580,6 +620,12 @@ export function migrateSave(value: unknown): SaveLoadResult {
     }
     if (hydrated.breakTurn === undefined) {
       hydrated.breakTurn = 0;
+      hydratedDefaults = true;
+    }
+    // Saves written before the soft-cap carry ledger have no banked fractions,
+    // which is exactly an empty ledger — a zero default, not a guess.
+    if (hydrated.softCapCarry === undefined) {
+      hydrated.softCapCarry = {};
       hydratedDefaults = true;
     }
     // P0-P2 V2 saves have the research skeleton but predate P3's dashboard,

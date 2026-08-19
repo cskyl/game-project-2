@@ -66,6 +66,7 @@ import {
   bossSemesterRamp,
   skillDriftEffects,
   softCapMultiplier,
+  SOFT_CAPPED_STATS,
 } from "../src/game/systems/progression";
 import type {
   Action,
@@ -957,10 +958,52 @@ function foundationChecks(): void {
     capProbeStats,
     { knowledge: 6, handSkill: -7, mood: 6 },
     [],
+    {},
   );
-  assert(capped.knowledge === 1, "P1 soft-cap +1 floor failed");
-  assert(capped.handSkill === -7, "P1 soft cap changed a negative skill delta");
-  assert(capped.mood === 6, "P1 soft cap changed an uncapped resource delta");
+  // 6 * 0.15 = 0.9: nothing is delivered yet, and the fraction is banked.
+  assert(capped.effects.knowledge === undefined, "P1 soft cap delivered an unbanked fraction");
+  assert(
+    Math.abs((capped.carry.knowledge ?? 0) - 0.9) < 1e-9,
+    `P1 soft cap failed to bank its remainder (observed ${capped.carry.knowledge})`,
+  );
+  assert(capped.effects.handSkill === -7, "P1 soft cap changed a negative skill delta");
+  assert(capped.effects.mood === 6, "P1 soft cap changed an uncapped resource delta");
+  assert(capped.carry.mood === undefined, "P1 soft cap banked an uncapped resource");
+
+  // The banked remainder must pay out, so a diminished stat never fully stalls.
+  const secondTouch = applySoftCaps(capProbeStats, { knowledge: 6 }, [], capped.carry);
+  assert(secondTouch.effects.knowledge === 1, "P1 soft-cap carry failed to pay out");
+  assert(
+    Math.abs((secondTouch.carry.knowledge ?? 0) - 0.8) < 1e-9,
+    `P1 soft-cap carry payout left a wrong remainder (observed ${secondTouch.carry.knowledge})`,
+  );
+
+  // The defect this ledger fixes: with a flat +1 floor, a delta of 3 gained the
+  // same point at 75, 85 and 95, so the bands were not an actual reduction.
+  // Ten repeated touches must now be strictly ordered by band.
+  const bandYield = (current: number): number => {
+    let carry: StatBlock = {};
+    let delivered = 0;
+    for (let touch = 0; touch < 10; touch += 1) {
+      const step = applySoftCaps(
+        { ...capProbeState.stats, knowledge: current },
+        { knowledge: 3 },
+        [],
+        carry,
+      );
+      delivered += step.effects.knowledge ?? 0;
+      carry = step.carry;
+    }
+    return delivered;
+  };
+  const yields = [50, 65, 75, 85, 95].map(bandYield);
+  for (let index = 1; index < yields.length; index += 1) {
+    assert(
+      yields[index] < yields[index - 1],
+      `P1 soft-cap bands are not strictly diminishing over repeated touches: ${yields.join(" > ")}`,
+    );
+  }
+  assert(yields[yields.length - 1] > 0, "P1 soft cap stalled a stat completely");
 
   const driftStats = {
     ...capProbeState.stats,
@@ -1503,7 +1546,112 @@ console.log(
 console.log(
   `Coverage: events=${eventsSeen.size}/${EVENTS.length} (${((eventsSeen.size / EVENTS.length) * 100).toFixed(1)}%); dead=${deadEvents.length}; max ending=${(maxEndingShare * 100).toFixed(1)}%; max action=${(highestActionShare * 100).toFixed(1)}% (${highestActionLabel})`,
 );
+// ---------------------------------------------------------------------------
+// G13 — soft-cap saturation.  A stat that every run pins at its ceiling carries
+// no decision: it is a constant wearing a progress bar, and it silently drops a
+// dimension out of careerReadiness.  The carry ledger makes the §4.2 bands
+// exact, but a stat with enough incidental authored sources still saturates, so
+// the sweep measures the outcome rather than trusting the formula.
+// ---------------------------------------------------------------------------
+const SATURATION_MEAN_CEILING = 92;
+const SATURATION_PINNED_SHARE = 0.25;
+const SATURATION_PINNED_VALUE = 99;
+/**
+ * Stats already saturating when this gate landed, each with the phase that owns
+ * the fix.  The gate ratchets in both directions: a NEW saturating stat fails,
+ * and a listed stat that stops saturating also fails, so the entry must be
+ * deleted rather than left to rot.  The list may only shrink.
+ */
+const SATURATION_DEBT = new Map<StatKey, string>([
+  [
+    "confidence",
+    "P9 content tuning: ~33 incidental grants per run from cards/events/bosses, none of them a player choice",
+  ],
+]);
+
+type SaturationRow = { stat: StatKey; mean: number; pinnedShare: number; saturated: boolean };
+const saturationRows: SaturationRow[] = SOFT_CAPPED_STATS.map((stat) => {
+  const values = finalStats.map((stats) => stats[stat]);
+  const statMean = mean(values);
+  const pinnedShare =
+    values.length === 0
+      ? 0
+      : values.filter((value) => value >= SATURATION_PINNED_VALUE).length / values.length;
+  return {
+    stat,
+    mean: statMean,
+    pinnedShare,
+    saturated:
+      statMean >= SATURATION_MEAN_CEILING || pinnedShare > SATURATION_PINNED_SHARE,
+  };
+});
+console.log(
+  `G13 soft-cap saturation (mean, share pinned >=${SATURATION_PINNED_VALUE}): ${saturationRows
+    .map(
+      (row) =>
+        `${row.stat}=${row.mean.toFixed(1)}/${(row.pinnedShare * 100).toFixed(0)}%${row.saturated ? "*" : ""}`,
+    )
+    .join(" ")}`,
+);
+for (const [stat, owner] of SATURATION_DEBT) {
+  console.log(`G13 known saturation debt: ${stat} — ${owner}`);
+}
+
+// ---------------------------------------------------------------------------
+// G14 — per-playstyle ending variety.  G1 bounds the ending distribution across
+// all bots pooled, which passes even when each individual playstyle lands on one
+// fixed ending every single run.  That aggregate cannot see the replayability
+// question, so the concentration is measured per bot.  P8 (archetypes, semester
+// modifiers, boss variants, deck-building) owns making this pass.
+// ---------------------------------------------------------------------------
+const G14_PER_BOT_CEILING = 0.6;
+const botEndingConcentration = BOTS.map((bot) => {
+  const counts = endingsByBot.get(bot.id) ?? new Map<string, number>();
+  const total = [...counts.values()].reduce((sum, count) => sum + count, 0);
+  let topId = "none";
+  let topCount = 0;
+  for (const [id, count] of counts) {
+    if (count > topCount || (count === topCount && id < topId)) {
+      topId = id;
+      topCount = count;
+    }
+  }
+  return {
+    botId: bot.id,
+    topId,
+    share: total === 0 ? 0 : topCount / total,
+    distinct: counts.size,
+  };
+}).sort((left, right) => right.share - left.share);
+console.log(
+  `G14 per-bot ending concentration (worst first): ${botEndingConcentration
+    .map(
+      (row) =>
+        `${row.botId}=${row.topId}@${(row.share * 100).toFixed(0)}%/${row.distinct}distinct`,
+    )
+    .join(" ")}`,
+);
+
 if (!quick) {
+  const g13Failures: string[] = [];
+  for (const row of saturationRows) {
+    const debtOwner = SATURATION_DEBT.get(row.stat);
+    if (row.saturated && debtOwner === undefined) {
+      g13Failures.push(
+        `${row.stat} saturated (mean ${row.mean.toFixed(2)}, ${(row.pinnedShare * 100).toFixed(1)}% pinned) and is not recorded debt`,
+      );
+    }
+    if (!row.saturated && debtOwner !== undefined) {
+      g13Failures.push(
+        `${row.stat} no longer saturates (mean ${row.mean.toFixed(2)}, ${(row.pinnedShare * 100).toFixed(1)}% pinned) — delete its SATURATION_DEBT entry`,
+      );
+    }
+  }
+  assert(
+    g13Failures.length === 0,
+    `G13 ${g13Failures.join("; ")}; required mean <${SATURATION_MEAN_CEILING} and pinned share <=${(SATURATION_PINNED_SHARE * 100).toFixed(0)}%`,
+  );
+
   const p1GateFailures: string[] = [];
   if (endings.size < 10) {
     p1GateFailures.push(
@@ -1589,6 +1737,14 @@ console.log(
   quick
     ? "G4 DEFERRED P9 | G5 DIAGNOSTIC ONLY: full-sweep rate assertions skipped | G6 DEFERRED P7 | G7 DEFERRED P6"
     : "G4 DEFERRED P9 | G5 PASS: focused >=60%, balanced <=20%, clinical-only <=5%, 3+ papers show clinicalRecord cost | G6 DEFERRED P7 | G7 DEFERRED P6",
+);
+console.log(
+  quick
+    ? "G13 DIAGNOSTIC ONLY: full-sweep saturation assertion skipped"
+    : `G13 PASS: no unrecorded soft-cap saturation (${SATURATION_DEBT.size} known debt entr${SATURATION_DEBT.size === 1 ? "y" : "ies"})`,
+);
+console.log(
+  `G14 DEFERRED P8: per-bot ending concentration ceiling ${(G14_PER_BOT_CEILING * 100).toFixed(0)}%; worst now ${botEndingConcentration[0]?.botId ?? "n/a"} at ${((botEndingConcentration[0]?.share ?? 0) * 100).toFixed(1)}%`,
 );
 console.log(
   quick

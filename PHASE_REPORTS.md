@@ -141,3 +141,61 @@ Deferred gates are not counted as passes.
   ≥90% authored-event coverage is P9. The P3 harness nevertheless reports
   generic and research-event coverage separately for later content tuning
   (17/24 authored research events fired in the final full P3 sweep).
+
+## P3.1 — post-review corrections
+
+**Status:** green on `v2/p4-clinical` before P4 content begins. All figures below
+were measured locally by the reviewing agent, not carried over from P3.
+
+- **Independent verification first.** The full 1,200-run sweep was reproduced
+  before any change: ending distribution, `careerReadiness` mean 74.346 / SD
+  10.921 / max 93, median 662.5 decisions, and 1,200/1,200 byte-identical
+  replays all matched the P3 receipt exactly. The P0–P3 receipts are accurate.
+- **§4.2 soft-cap floor replaced with a banked-fraction ledger.** The floor
+  `max(1, floor(delta * multiplier))` delivered a whole point on every positive
+  touch, so for the **147 of 218 (67.4%)** authored positive deltas that are ≤5,
+  the 0.5 / 0.3 / 0.15 bands were indistinguishable — a delta of 3 gained
+  exactly one point at 75, 85 and 95 alike. `GameState.softCapCarry` now banks
+  the remainder per stat in `[0, 1)`. The harness asserts the delivered yield
+  over ten repeated touches is **strictly decreasing** across bands and still
+  non-zero at the top band; restoring the old floor fails that assertion
+  (verified by negative control).
+- **Post-fix sweep:** 10 endings, largest `operator_owner` **23.1%**;
+  `careerReadiness` mean **74.042**, population SD **10.298**, max **92**;
+  median 662.5 decisions; 1,200/1,200 byte-identical replays. `balanced_dentist`
+  fell from 5.0% to 0.2% — it is the designated fallback, but that is close to
+  dead content and is flagged for the P7 ending re-evaluation.
+- **G13 added and passing.** Per-stat graduation saturation across the sweep:
+  knowledge 63.3/6%, handSkill 61.0/4%, clinicalSense 60.9/1%, empathy 86.5/16%,
+  **confidence 98.5/76%**, reputation 83.2/9%, research 29.1/4%, publicImpact
+  52.2/10%, standing 33.0/0% (mean / share pinned ≥99). Only `confidence`
+  saturates; it is recorded as explicit debt owned by P9. Attribution over full
+  runs shows why: ~33 grants per run, all incidental — 48 card touches, 31 event
+  touches and 20 boss touches across three runs, none a player choice. No extra
+  band was invented to hide a content-volume problem.
+- **G14 added, deferred to P8.** Per-bot ending concentration, worst first:
+  hands-max `steady_hands` **100%** (1 distinct), money `operator_owner` 93%,
+  research-max `academic_research` 85%, chaos 85%, social 72%, study-max 62%,
+  wellness 58%, clinic-max 53%, balanced 45%, min-max-exploiter 41%. G1's pooled
+  23.1% cannot see this; P8's run-variance layer owns bringing it under 60%.
+- **Week lifecycle extracted (engine.ts 593 → 239 lines).** New
+  `systems/week.ts` (216), `systems/boss.ts` (120) and `systems/achievements.ts`
+  (35); the calendar owns the semester cursors. **The refactor is
+  behaviour-preserving:** the post-refactor sweep reproduces every
+  pre-refactor figure exactly — identical ending counts (277/234/216/121/103/
+  102/96/38/11/2), identical CR mean/SD/max, identical median decisions, and
+  1,200/1,200 byte-identical replays.
+- **Save-cursor crash path closed.** `isV2State` accepted any finite
+  `semesterIndex`, so a stored `semesterIndex: 999` passed validation and then
+  threw in `GameLayout` on `SEMESTERS[999].name`. Both cursors are now
+  range-validated and legacy V1 cursors are clamped. New G12 fixtures cover
+  `semesterIndex` 999/−1/1.5 and `weekInSemester` 0/99, the clamped legacy path,
+  and four malformed `softCapCarry` shapes; reverting either guard fails the
+  fixture (verified by negative control). Reported by the codex adversarial pass.
+- **G11 PASS:** strict TypeScript + Vite build clean; validator 1,375 bilingual
+  values, 0 errors, the same 15 declared later-phase/shadow warnings; render
+  smoke 14 screens in both EN and ZH; `npm run test:migration` green.
+- Known gaps left open deliberately: G5's 3+-publication clause remains
+  vacuous (no run can reach three papers under the two-poster/publication
+  ledger cap) and its `clinicalRecord` input is still the three-stat average
+  rather than the case log — both belong to P4, which introduces the case log.

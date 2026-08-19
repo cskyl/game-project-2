@@ -55,10 +55,11 @@ export function applyEffects(
   const scaledEffects = scale
     ? scaleEffects(effects, state.difficulty)
     : effects;
-  const finalEffects = applySoftCaps(
+  const { effects: finalEffects, carry: softCapCarry } = applySoftCaps(
     state.stats,
     scaledEffects,
     collectHooks(state),
+    state.softCapCarry,
   );
   const stats = addEffects(state.stats, finalEffects);
   const weekGains = { ...state.weekGains };
@@ -84,5 +85,10 @@ export function applyEffects(
     logEntries = [...state.log, entry].slice(-40);
   }
 
-  return transitionState(state, { stats, weekGains, log: logEntries });
+  return transitionState(state, {
+    stats,
+    weekGains,
+    softCapCarry,
+    log: logEntries,
+  });
 }

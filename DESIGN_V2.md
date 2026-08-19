@@ -232,11 +232,32 @@ Positive deltas are multiplied by a factor of the stat's **current** value:
 | 80–89 | 0.30 |
 | ≥ 90 | 0.15 |
 
-Applied **after** difficulty scaling, inside the effect pipeline. Floor: a raw
-positive delta ≥1 always yields at least +1. Negative deltas unaffected.
+Applied **after** difficulty scaling, inside the effect pipeline. Negative
+deltas unaffected.
+
+**Diminished fractions are banked, not rounded up.** State carries a per-stat
+remainder in `[0, 1)`; each positive delta adds `delta × multiplier` to the
+remainder and delivers `floor()` of the result. So a stat in the 0.15 band with
+a +3 authored delta gains a point roughly every second touch instead of on
+every touch, and gains still never stop entirely.
+
+> The ledger is not decoration — it is the whole mechanism. An earlier version
+> of this rule said "a raw positive delta ≥1 always yields at least +1". That
+> floor silently destroyed the soft cap: **67% of authored positive deltas on
+> soft-capped stats are ≤5**, and for those the 0.5 / 0.3 / 0.15 bands all
+> collapse to the same +1. A +3 gain delivered exactly one point at 75, at 85,
+> and at 95 alike — a flat ratchet, not diminishing returns. Any future change
+> here must keep the bands *strictly* ordered over repeated touches; the harness
+> asserts exactly that.
 
 **Consequence:** in 60 weeks you can push roughly two stats past 85, or four to
 ~70. Specialization becomes the dominant strategy — which is the point.
+
+**The formula is necessary but not sufficient.** A stat with enough incidental
+authored sources still saturates no matter how correct the bands are, because it
+climbs through the cheap low bands before the expensive ones ever apply. That is
+a *content-volume* problem and must be fixed in the content, not by inventing
+more bands. G13 (§10) measures it per stat so it cannot hide.
 
 ### 4.3 Skill drift ("use it or lose it")
 
@@ -842,8 +863,11 @@ src/
     constants.ts        EXTEND
     balance.ts          EXTEND  soft caps, drift, thresholds
     modifiers.ts        NEW  central perk/equipment/flag modifier registry
-    engine.ts           REFACTOR → thin orchestrator
+    engine.ts           REFACTOR → run creation + player verbs + public surface
     systems/
+      week.ts           NEW  week lifecycle (start / finish / event / rollover)
+      boss.ts           NEW  semester checks, ending selection, advance
+      achievements.ts   NEW
       research.ts       NEW
       cases.ts          NEW
       simlab.ts         NEW
@@ -867,12 +891,15 @@ src/
     PerkTree, MatchScreen, BreakChapter, AlumniWall, RollBreakdown, NpcPanel
 ```
 
-**`engine.ts` must not grow past ~600 lines.** It orchestrates; systems own
-their own logic and expose `tick(state) → state` style functions.
+**`engine.ts` must not grow past ~600 lines.** It owns run creation and the
+player verbs and re-exports the public surface; systems own their own logic and
+expose `tick(state) → state` style functions. Nine phases still have systems to
+land, so treat 400 lines as the point to extract another system rather than
+waiting for the hard cap.
 
 ### 9.2 State shape
 
-`GameState` gains: `rngSeed`, `rngCursor`, `archetypeId`, `npcs`, `research`,
+`GameState` gains: `rngSeed`, `rngCursor`, `softCapCarry`, `archetypeId`, `npcs`, `research`,
 `caseLog`, `simLabLog`, `perks`, `equipment`, `debt`, `focus`, `standing`,
 `sleepDebt`, `injuryRisk`, `activeElective`, `semesterModifiers`, `runDeck`,
 `leadershipRole`, `breakChoices`, `matchApplications`, `weekGains`,
@@ -951,6 +978,8 @@ until its gates pass.
 | G10 | Same seed + same inputs ⇒ byte-identical final state (determinism) |
 | G11 | `npm run build` clean (tsc strict, no `any` in `src/game/`), content validator clean |
 | G12 | Save migration: a v1 save loads into v2 without data loss and without crash |
+| G13 | **No unrecorded stat saturation.** For every soft-capped stat: graduation mean < 92 and the share of runs pinned at ≥99 is ≤25%. Stats already saturating when the gate landed sit in an explicit debt list naming the phase that owns the fix; the gate fails both on a *new* saturating stat and on a listed stat that stops saturating, so the list can only shrink |
+| G14 | **Per-playstyle ending variety.** No single ending accounts for >60% of any one strategy bot's runs. G1 bounds the *pooled* distribution, which passes even when each playstyle lands on one fixed ending every run — the aggregate cannot see replayability, so it is measured per bot. Owned by P8 |
 
 ---
 
@@ -969,10 +998,10 @@ start a phase before its predecessor's gate is green.
 | **P5** | NPCs (§5.4): 10 NPCs, 44 arc events, roster draw, NPC actions and panel | G3, NPC gates in §5.4 |
 | **P6** | Finance (§5.5), perks (§5.6), equipment (§5.7), wellness (§5.8), leadership (§5.10) | G7, G8, G11 |
 | **P7** | Boards + Match (§5.11) + career-track endings + class standing (§5.12) | G6, G1 (full) |
-| **P8** | Randomness layer: archetypes, semester modifiers, boss variants, deck-building, meta-progression, alumni wall, challenge runs | G1, G4, G10 |
-| **P9** | Content fill to §7 targets; content validator; full bilingual pass | G4 (≥90%), validator clean |
+| **P8** | Randomness layer: archetypes, semester modifiers, boss variants, deck-building, meta-progression, alumni wall, challenge runs | G1, G4, G10, **G14** |
+| **P9** | Content fill to §7 targets; content validator; full bilingual pass; **clear the G13 saturation debt** (a stat that saturates does so because too many authored sources grant it for free) | G4 (≥90%), **G13 with an empty debt list**, validator clean |
 | **P10** | Visual/UX pass (§8), accessibility, mobile, motion | manual render smoke, a11y check |
-| **P11** | Full balance sweep and tuning; all gates G1–G12 green; deploy to Pages | all gates |
+| **P11** | Full balance sweep and tuning; all gates G1–G14 green; deploy to Pages | all gates |
 
 **Sequencing note.** P0 and P1 are load-bearing — every later phase depends on
 seeded RNG, the modifier registry, and the balance model. Do not reorder them,
