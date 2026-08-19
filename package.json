@@ -7,11 +7,13 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.json && vite build",
-    "smoke": "mkdir -p /scratch/$USER/dsls-v2 && esbuild scripts/smoke.mts --bundle --platform=node --format=esm --outfile=/scratch/$USER/dsls-v2/smoke.bundle.mjs && node /scratch/$USER/dsls-v2/smoke.bundle.mjs --quick",
-    "balance": "mkdir -p /scratch/$USER/dsls-v2 && esbuild scripts/smoke.mts --bundle --platform=node --format=esm --outfile=/scratch/$USER/dsls-v2/balance.bundle.mjs && node /scratch/$USER/dsls-v2/balance.bundle.mjs",
-    "validate-content": "mkdir -p /scratch/$USER/dsls-v2 && esbuild content-gen/validate.mts --bundle --platform=node --format=esm --outfile=/scratch/$USER/dsls-v2/validate.bundle.mjs && node /scratch/$USER/dsls-v2/validate.bundle.mjs",
-    "test:migration": "mkdir -p /scratch/$USER/dsls-v2 && esbuild scripts/migration-test.mts --bundle --platform=node --format=esm --outfile=/scratch/$USER/dsls-v2/migration-test.bundle.mjs && node /scratch/$USER/dsls-v2/migration-test.bundle.mjs",
-    "test:render": "mkdir -p /scratch/$USER/dsls-v2 && esbuild scripts/render-smoke.tsx --bundle --platform=node --format=cjs --outfile=/scratch/$USER/dsls-v2/render-smoke.bundle.cjs && node /scratch/$USER/dsls-v2/render-smoke.bundle.cjs",
+    "_comment": "Harness bundles go to node_modules/.cache: always writable, always ignored, and identical on a workstation, an HPC login node, and a CI runner. Never an absolute machine-specific path — CI has no /scratch.",
+    "tmpdir": "node -e \"require('fs').mkdirSync('node_modules/.cache/dsls-v2',{recursive:true})\"",
+    "smoke": "npm run tmpdir && esbuild scripts/smoke.mts --bundle --platform=node --format=esm --outfile=node_modules/.cache/dsls-v2/smoke.bundle.mjs && node node_modules/.cache/dsls-v2/smoke.bundle.mjs --quick",
+    "balance": "npm run tmpdir && esbuild scripts/smoke.mts --bundle --platform=node --format=esm --outfile=node_modules/.cache/dsls-v2/balance.bundle.mjs && node node_modules/.cache/dsls-v2/balance.bundle.mjs",
+    "validate-content": "npm run tmpdir && esbuild content-gen/validate.mts --bundle --platform=node --format=esm --outfile=node_modules/.cache/dsls-v2/validate.bundle.mjs && node node_modules/.cache/dsls-v2/validate.bundle.mjs",
+    "test:migration": "npm run tmpdir && esbuild scripts/migration-test.mts --bundle --platform=node --format=esm --outfile=node_modules/.cache/dsls-v2/migration-test.bundle.mjs && node node_modules/.cache/dsls-v2/migration-test.bundle.mjs",
+    "test:render": "npm run tmpdir && esbuild scripts/render-smoke.tsx --bundle --platform=node --format=cjs --outfile=node_modules/.cache/dsls-v2/render-smoke.bundle.cjs && node node_modules/.cache/dsls-v2/render-smoke.bundle.cjs",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
@@ -24,6 +26,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "esbuild": "^0.21.5",
     "gh-pages": "^6.2.0",
     "typescript": "^5.6.3",
     "vite": "^5.4.11"

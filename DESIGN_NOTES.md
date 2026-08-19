@@ -297,3 +297,18 @@ confirmed accurate before any change was made.
   ledger — a zero default, not a guess. This follows the existing in-development
   V2 hydration path used for the P1/P2/P3 fields. A structurally invalid ledger
   (out of `[0, 1)`, or keyed by a non-stat) is still refused.
+
+## 2026-08-19 — CI portability
+
+- **Harness bundles must not use absolute machine paths.** The npm scripts wrote
+  their esbuild output to `/scratch/$USER/dsls-v2`, which exists on the SCC
+  login node and nowhere else. The first push to `main` that actually exercised
+  them failed in 19s on `mkdir: cannot create directory '/scratch'`. They now
+  write to `node_modules/.cache/dsls-v2`: always writable, already ignored, and
+  identical on a workstation, an HPC login node, and a CI runner. Local runs are
+  unaffected. The earlier "CI boundary" note above described intent that had
+  never actually executed — CI had only ever built V1, which has no harness.
+- **`esbuild` is now a declared devDependency.** Every harness script invokes it,
+  but it was only present as a hoisted transitive dependency of Vite. That works
+  today and would break silently the day Vite changes how it vendors esbuild,
+  taking the whole test suite with it.
